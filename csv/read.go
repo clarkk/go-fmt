@@ -329,13 +329,15 @@ func (r *Reader) encoding() error {
 		return nil
 	}
 	
+	s := sanitize.Normalize_non_utf8(string(r.src))
+	
 	//	Encode UTF8
-	out := make([]byte, len(r.src) * utf8.UTFMax)
+	out := make([]byte, len(s) * utf8.UTFMax)
 	n := 0
-	for _, r := range r.src {
+	for _, r := range []byte(s) {
 		n += utf8.EncodeRune(out[n:], rune(r))
 	}
-	s := string(out[:n])
+	s = string(out[:n])
 	s = sanitize.Filter_utf8mb3(s)
 	s = sanitize.Trim(s, true)
 	r.log_append("UTF8 encoded")
