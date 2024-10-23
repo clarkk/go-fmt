@@ -200,14 +200,14 @@ func (r *Reader) parse(mimetype string) (table, error){
 		r.fill_empty_cols(cols)
 	}
 	
+	if r.options[opt_remove_empty_cols] {
+		r.remove_empty_cols()
+	}
+	
 	if !r.options[opt_ignore_header] {
 		if err := r.check_col_header(); err != nil {
 			return table{}, err
 		}
-	}
-	
-	if r.options[opt_remove_empty_cols] {
-		r.remove_empty_cols()
 	}
 	
 	r.log_append(fmt.Sprintf("Rows found: %d", len(r.out)))
@@ -254,7 +254,6 @@ func (r *Reader) remove_empty_cols(){
 	for c := len(cols)-1; c >= 0; c-- {
 		if cols[c] {
 			r.log_append(fmt.Sprintf("Remove empty column index: %d", c))
-			r.out_header = append(r.out_header[:c], r.out_header[c+1:]...)
 			for i := range r.out {
 				r.out[i].Row = append(r.out[i].Row[:c], r.out[i].Row[c+1:]...)
 			}
