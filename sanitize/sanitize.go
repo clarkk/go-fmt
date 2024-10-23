@@ -11,15 +11,18 @@ const (
 	NBSP_UTF8		= "\xC2\xA0"
 	//	Zero-width space: https://www.compart.com/en/unicode/U+200B
 	ZWSP_UTF8		= "\xE2\x80\x8B"
+	
 	//	Soft hyphen: https://www.compart.com/en/unicode/U+00AD
 	SHY_UTF8		= "\xC2\xAD"
 	//	Non-breaking hyphen: https://www.compart.com/en/unicode/U+2011
 	NBHY_UTF8		= "\xE2\x80\x91"
+	//	En dash: https://www.compart.com/en/unicode/U+2013
+	ENDASH_UTF8		= "\xE2\x80\x93"
 )
 
 var (
 	re_space 			= regexp.MustCompile(NBSP_UTF8+`|`+ZWSP_UTF8)
-	re_hyphen 			= regexp.MustCompile(SHY_UTF8+`|`+NBHY_UTF8)
+	re_hyphen 			= regexp.MustCompile(SHY_UTF8+`|`+NBHY_UTF8+`|`+ENDASH_UTF8)
 	re_reduce_newlines 	= regexp.MustCompile(`\n{3,}`)
 	re_reduce_spaces 	= regexp.MustCompile(` +`)
 	
@@ -72,6 +75,14 @@ func Trim(s string, allow_newlines bool) string {
 
 func Non_printable(s string) string {
 	return re_printable.ReplaceAllString(s, "")
+}
+
+func Normalize_non_utf8(s string) string {
+	//	Replace "en dash"
+	if strings.Contains(s, "\x96") {
+		s = strings.Replace(s, "\x96", "-", -1)
+	}
+	return s
 }
 
 func normalize(s string) string {
