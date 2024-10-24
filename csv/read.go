@@ -208,6 +208,10 @@ func (r *Reader) parse(mimetype string) (table, error){
 		if err := r.check_col_header(); err != nil {
 			return table{}, err
 		}
+		
+		if r.options[opt_remove_empty_cols] {
+			r.remove_empty_cols()
+		}
 	}
 	
 	r.log_append(fmt.Sprintf("Rows found: %d", len(r.out)))
@@ -245,7 +249,7 @@ func (r *Reader) remove_empty_cols(){
 	cols := make([]bool, len(r.out[0].Row))
 	for _, row := range r.out {
 		for i, value := range row.Row {
-			if value == "" {
+			if value != "" {
 				cols[i] = true
 			}
 		}
@@ -253,10 +257,15 @@ func (r *Reader) remove_empty_cols(){
 	
 	for c := len(cols)-1; c >= 0; c-- {
 		if cols[c] {
-			r.log_append(fmt.Sprintf("Remove empty column index: %d", c))
-			for i := range r.out {
-				r.out[i].Row = append(r.out[i].Row[:c], r.out[i].Row[c+1:]...)
-			}
+			continue
+		}
+		
+		r.log_append(fmt.Sprintf("Remove empty column index: %d", c))
+		if len(r.out_header) != 0 {
+			r.out_header = append(r.out_header[:c], r.out_header[c+1:]...)
+		}
+		for i := range r.out {
+			r.out[i].Row = append(r.out[i].Row[:c], r.out[i].Row[c+1:]...)
 		}
 	}
 }
