@@ -236,6 +236,83 @@ func (r *Reader) parse(mimetype string) (table, error){
 	}, nil
 }
 
+func (r *Reader) encoding() []byte {
+	var src []byte
+	if len(r.src_convert) != 0 {
+		src = r.src_convert
+	} else {
+		src = r.src
+	}
+	
+	//	Detect and strip UTF8 BOM
+	if bytes.HasPrefix(src, []byte(BOM_UTF8)) {
+		s := string(src[len(BOM_UTF8):])
+		s = sanitize.Filter_utf8mb3(s)
+		s = sanitize.Trim(s, true)
+		r.log_append("UTF8 BOM found")
+		return r.src_encoding(s)
+	}
+	
+	s := string(src)
+	
+	//	Valid UTF8
+	if utf8.Valid(src) {
+		s = sanitize.Filter_utf8mb3(s)
+		s = sanitize.Trim(s, true)
+		r.log_append("UTF8 validated")
+		return r.src_encoding(s)
+	}
+	
+	//	Encode UTF8
+	out := make([]byte, len(s) * utf8.UTFMax)
+	n := 0
+	for _, r := range []byte(s) {
+		n += utf8.EncodeRune(out[n:], rune(r))
+	}
+	s = string(out[:n])
+	s = sanitize.Filter_utf8mb3(s)
+	s = sanitize.Trim(s, true)
+	r.log_append("UTF8 encoded")
+	return r.src_encoding(s)
+}
+
+func (r *Reader) convert_xls() error {
+	if r.tmp_dir == "" {
+		return fmt.Errorf("Temp directory not defined")
+	}
+	
+	if err := unix.Access(r.tmp_dir, unix.W_OK); err != nil {
+		return fmt.Errorf("Temp directory not writeable: %w", err)
+	}
+	
+	f, err := os.CreateTemp(r.tmp_dir, "xls")
+	if err != nil {
+		return fmt.Errorf("Unable to create temp xls file: %w", err)
+	}
+	file_name := f.Name()
+	defer os.Remove(file_name)
+	
+	_, err = f.Write(r.src)
+	if err != nil {
+		return fmt.Errorf("Unable to write temp xls file: %w", err)
+	}
+	
+	file_name_csv := file_name+".csv"
+	c := cmd.Command{}
+	if err := c.Run("ssconvert "+file_name+" "+file_name_csv); err != nil {
+		r.log_append("Unable to convert XLS to CSV")
+		return &Error{"Unable to convert XLS to CSV", err}
+	}
+	defer os.Remove(file_name_csv)
+	
+	if err := r.src_convert_file(file_name_csv); err != nil {
+		return err
+	}
+	
+	r.log_append("XLS converted to CSV")
+	return nil
+}
+
 func (r *Reader) strip_non_printable(){
 	c := 0
 	for i, value := range r.out_header {
@@ -351,82 +428,6 @@ func (r *Reader) col_integrity(cols []int) error {
 	}
 	r.log_append("Columns in CSV not equal")
 	return &Error{"Columns in CSV not equal", nil}
-}
-
-func (r *Reader) encoding() []byte {
-	var src []byte
-	if len(r.src_convert) != 0 {
-		src = r.src_convert
-	} else {
-		src = r.src
-	}
-	
-	//	Detect and strip UTF8 BOM
-	if bytes.HasPrefix(src, []byte(BOM_UTF8)) {
-		s := string(src[len(BOM_UTF8):])
-		s = sanitize.Filter_utf8mb3(s)
-		s = sanitize.Trim(s, true)
-		r.log_append("UTF8 BOM found")
-		return r.src_encoding(s)
-	}
-	
-	s := string(src)
-	
-	if utf8.Valid(src) {
-		s = sanitize.Filter_utf8mb3(s)
-		s = sanitize.Trim(s, true)
-		r.log_append("UTF8 validated")
-		return r.src_encoding(s)
-	}
-	
-	//	Encode UTF8
-	out := make([]byte, len(s) * utf8.UTFMax)
-	n := 0
-	for _, r := range []byte(s) {
-		n += utf8.EncodeRune(out[n:], rune(r))
-	}
-	s = string(out[:n])
-	s = sanitize.Filter_utf8mb3(s)
-	s = sanitize.Trim(s, true)
-	r.log_append("UTF8 encoded")
-	return r.src_encoding(s)
-}
-
-func (r *Reader) convert_xls() error {
-	if r.tmp_dir == "" {
-		return fmt.Errorf("Temp directory not defined")
-	}
-	
-	if err := unix.Access(r.tmp_dir, unix.W_OK); err != nil {
-		return fmt.Errorf("Temp directory not writeable: %w", err)
-	}
-	
-	f, err := os.CreateTemp(r.tmp_dir, "xls")
-	if err != nil {
-		return fmt.Errorf("Unable to create temp xls file: %w", err)
-	}
-	file_name := f.Name()
-	defer os.Remove(file_name)
-	
-	_, err = f.Write(r.src)
-	if err != nil {
-		return fmt.Errorf("Unable to write temp xls file: %w", err)
-	}
-	
-	file_name_csv := file_name+".csv"
-	c := cmd.Command{}
-	if err := c.Run("ssconvert "+file_name+" "+file_name_csv); err != nil {
-		r.log_append("Unable to convert XLS to CSV")
-		return &Error{"Unable to convert XLS to CSV", err}
-	}
-	defer os.Remove(file_name_csv)
-	
-	if err := r.src_convert_file(file_name_csv); err != nil {
-		return err
-	}
-	
-	r.log_append("XLS converted to CSV")
-	return nil
 }
 
 func (r *Reader) get_separator(s string){
