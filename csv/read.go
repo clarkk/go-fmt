@@ -27,9 +27,10 @@ const (
 	MIME_XLS		= "application/vnd.ms-excel"
 	MIME_XLXS		= "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 	
-	opt_ignore_header		= "ignore_header"
-	opt_remove_empty_cols	= "remove_empty_cols"
 	opt_col_integrity		= "col_integrity"
+	opt_remove_empty_cols	= "remove_empty_cols"
+	opt_optional_header		= "optional_header"
+	opt_ignore_header		= "ignore_header"
 )
 
 var (
@@ -70,9 +71,10 @@ type (
 func NewReader(tmp_dir string) *Reader {
 	return &Reader{
 		options: map[string]bool{
-			opt_ignore_header:		false,
-			opt_remove_empty_cols:	false,
 			opt_col_integrity:		false,
+			opt_remove_empty_cols:	false,
+			opt_optional_header:	false,
+			opt_ignore_header:		false,
 		},
 		tmp_dir: tmp_dir,
 	}
@@ -85,7 +87,6 @@ func (r *Reader) File(file, mimetype string) (table, error){
 	if err != nil {
 		return table{}, fmt.Errorf("Unable read CSV file: %w", err)
 	}
-	
 	return r.parse(mimetype)
 }
 
@@ -113,19 +114,7 @@ func (r *Reader) Write_src(file string) error {
 		return fmt.Errorf("Unable to write file: %w", err)
 	}
 	
-	var (
-		log		string
-		opts 	[]string
-	)
-	for k, v := range r.options {
-		if v {
-			opts = append(opts, k)
-		}
-	}
-	if len(opts) != 0 {
-		log += "Options: "+strings.Join(opts, ", ")+"\r\n\r\n"
-	}
-	log += strings.Join(r.Log(), "\r\n")
+	log := strings.Join(r.Log(), "\r\n")
 	if err := os.WriteFile(file+".log", []byte(log), 0664); err != nil {
 		return fmt.Errorf("Unable to write file: %w", err)
 	}
@@ -133,9 +122,9 @@ func (r *Reader) Write_src(file string) error {
 	return nil
 }
 
-//	Ignore column header
-func (r *Reader) Ignore_header() *Reader {
-	r.options[opt_ignore_header] = true
+//	Ensure colum integrity (same quantity of columns in each line)
+func (r *Reader) Col_integrity() *Reader {
+	r.options[opt_col_integrity] = true
 	return r
 }
 
@@ -145,9 +134,15 @@ func (r *Reader) Remove_empty_cols() *Reader {
 	return r
 }
 
-//	Ensure colum integrity (same quantity of columns in each line)
-func (r *Reader) Col_integrity() *Reader {
-	r.options[opt_col_integrity] = true
+//	Optional column header
+func (r *Reader) Optional_header() *Reader {
+	r.options[opt_optional_header] = true
+	return r
+}
+
+//	Ignore column header
+func (r *Reader) Ignore_header() *Reader {
+	r.options[opt_ignore_header] = true
 	return r
 }
 
@@ -156,6 +151,12 @@ func (r *Reader) Log() []string {
 }
 
 func (r *Reader) parse(mimetype string) (table, error){
+	r.log_options()
+	
+	if r.options[opt_optional_header] && r.options[opt_ignore_header] {
+		return table{}, &Error{`Options "optional_header" and "ignore_header" can not be used in conjunction`, nil}
+	}
+	
 	if mimetype == MIME_XLS || mimetype == MIME_XLXS {
 		if err := r.convert_xls(); err != nil {
 			return table{}, err
@@ -204,7 +205,13 @@ func (r *Reader) parse(mimetype string) (table, error){
 		r.remove_empty_cols()
 	}
 	
-	if !r.options[opt_ignore_header] {
+	if r.options[opt_optional_header] {
+		if r.check_col_header() == nil {
+			if r.options[opt_remove_empty_cols] {
+				r.remove_empty_cols()
+			}
+		}
+	} else if !r.options[opt_ignore_header] {
 		if err := r.check_col_header(); err != nil {
 			return table{}, err
 		}
@@ -439,6 +446,18 @@ func (r *Reader) cols() []int {
 		cols[i] = len(row.Row)
 	}
 	return cols
+}
+
+func (r *Reader) log_options(){
+	var opts []string
+	for k, v := range r.options {
+		if v {
+			opts = append(opts, k)
+		}
+	}
+	if len(opts) != 0 {
+		r.log_append("Options: "+strings.Join(opts, ", "))
+	}
 }
 
 func (r *Reader) log_append(s string){
