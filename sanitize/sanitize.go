@@ -28,6 +28,7 @@ var (
 	
 	//	https://www.regular-expressions.info/unicode.html
 	re_printable 		= regexp.MustCompile(`[\P{C}\n\r\t]`)
+	re_non_printable	= regexp.MustCompile(`[^\P{C}\n\r\t]`)
 )
 
 func Filter_utf8mb3(s string) string {
@@ -77,12 +78,8 @@ func Non_printable(s string) string {
 	return re_printable.ReplaceAllString(s, "")
 }
 
-func Normalize_non_utf8(s string) string {
-	//	Replace "en dash"
-	if strings.Contains(s, "\x96") {
-		s = strings.Replace(s, "\x96", "-", -1)
-	}
-	return s
+func Strip_non_printable(s string) string {
+	return re_non_printable.ReplaceAllString(s, "")
 }
 
 func normalize(s string) string {
