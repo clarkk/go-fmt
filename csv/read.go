@@ -209,13 +209,13 @@ func (r *Reader) parse(mimetype string) (table, error){
 	}
 	
 	if r.options[opt_optional_header] {
-		if r.check_col_header() == nil {
+		if r.check_col_header(false) == nil {
 			if r.options[opt_remove_empty_cols] {
 				r.remove_empty_cols()
 			}
 		}
 	} else if !r.options[opt_ignore_header] {
-		if err := r.check_col_header(); err != nil {
+		if err := r.check_col_header(true); err != nil {
 			return table{}, err
 		}
 		
@@ -382,13 +382,15 @@ func (r *Reader) remove_empty_cols(){
 	}
 }
 
-func (r *Reader) check_col_header() error {
+func (r *Reader) check_col_header(error_log bool) error {
 	has_heading := true
 	
 	first_row := r.out[0].Row
 	for _, value := range first_row {
 		if value == "" {
-			r.log_append("Column headers cannot be empty")
+			if error_log {
+				r.log_append("Column headers cannot be empty")
+			}
 			return &Error{"Column headers cannot be empty", nil}
 		}
 		
@@ -399,7 +401,9 @@ func (r *Reader) check_col_header() error {
 	}
 	
 	if !has_heading {
-		r.log_append("Column headers in CSV required")
+		if error_log {
+			r.log_append("Column headers in CSV required")
+		}
 		return &Error{"Column headers in CSV required", nil}
 	} else {
 		r.log_append("Column headers found")
