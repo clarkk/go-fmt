@@ -46,7 +46,8 @@ type (
 		tmp_dir			string
 		
 		src				[]byte
-		src_convert		[]byte
+		src_converted	[]byte
+		src_encoded		[]byte
 		separator		rune
 		out 			Rows
 		out_header		[]string
@@ -166,7 +167,8 @@ func (r *Reader) parse(mimetype string) (table, error){
 		}
 	}
 	
-	read := csv.NewReader(bytes.NewBuffer(r.encoding()))
+	r.encoding()
+	read := csv.NewReader(bytes.NewBuffer(r.src_encoded))
 	read.FieldsPerRecord	= -1
 	read.Comma				= r.separator
 	
@@ -235,10 +237,10 @@ func (r *Reader) parse(mimetype string) (table, error){
 	}, nil
 }
 
-func (r *Reader) encoding() []byte {
+func (r *Reader) encoding(){
 	var src []byte
-	if len(r.src_convert) != 0 {
-		src = r.src_convert
+	if len(r.src_converted) != 0 {
+		src = r.src_converted
 	} else {
 		src = r.src
 	}
@@ -249,7 +251,8 @@ func (r *Reader) encoding() []byte {
 		s = sanitize.Filter_utf8mb3(s)
 		s = sanitize.Trim(s, true)
 		r.log_append("UTF8 BOM found")
-		return r.src_encoding(s)
+		r.src_encoding(s)
+		return
 	}
 	
 	s := string(src)
@@ -259,7 +262,8 @@ func (r *Reader) encoding() []byte {
 		s = sanitize.Filter_utf8mb3(s)
 		s = sanitize.Trim(s, true)
 		r.log_append("UTF8 validated")
-		return r.src_encoding(s)
+		r.src_encoding(s)
+		return
 	}
 	
 	//	Encode UTF8
@@ -272,7 +276,7 @@ func (r *Reader) encoding() []byte {
 	s = sanitize.Filter_utf8mb3(s)
 	s = sanitize.Trim(s, true)
 	r.log_append("UTF8 encoded")
-	return r.src_encoding(s)
+	r.src_encoding(s)
 }
 
 func (r *Reader) convert_xls() error {
@@ -455,17 +459,17 @@ func (r *Reader) get_separator(s string){
 
 func (r *Reader) src_convert_file(file string) error {
 	var err error
-	r.src_convert, err = os.ReadFile(file)
+	r.src_converted, err = os.ReadFile(file)
 	if err != nil {
 		return fmt.Errorf("Unable to read temp csv file: %w", err)
 	}
 	return nil
 }
 
-func (r *Reader) src_encoding(s string) []byte {
+func (r *Reader) src_encoding(s string){
+	r.src_encoded	= []byte(s)
 	r.non_printable = sanitize.Non_printable(s)
 	r.get_separator(s)
-	return []byte(s)
 }
 
 func (r *Reader) cols() []int {
@@ -477,8 +481,8 @@ func (r *Reader) cols() []int {
 }
 
 func (r *Reader) log_non_printable(){
+	len_total			:= len(r.src_encoded)
 	len_non_printable	:= len(r.non_printable)
-	len_total			:= len(r.src)
 	percent				:= float32(len_non_printable) / float32(len_total) * 100
 	r.log_append(fmt.Sprintf("Non-printable chars found (%d / %d = %.2f%%): %s", len_non_printable, len_total, percent, r.non_printable))
 }
