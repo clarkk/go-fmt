@@ -51,9 +51,9 @@ func (o test_output) verify(t *testing.T){
 		t.Fatalf("Want: %s\n\nGot: %s", o.header, header)
 	}
 	
-	s := []string{}
-	for _, line := range out.Rows {
-		s = append(s, strings.Join(line.Row, ","))
+	s := make([]string, len(out.Rows))
+	for i, line := range out.Rows {
+		s[i] = strings.Join(line.Row, ",")
 	}
 	
 	rows := strings.Join(s, "\n")
@@ -99,7 +99,7 @@ func Test_error(t *testing.T){
 			reader:	func(t *testing.T) *Reader {
 				return NewReader("")
 			},
-			input:	`"test"`+"\n"+`"test","test"`,
+			input:	"test\ntest,test",
 			error:	"Too few column headers",
 		}}
 		verify_test(t, tests)
@@ -111,7 +111,7 @@ func Test_error(t *testing.T){
 				return NewReader("").
 					Col_integrity()
 			},
-			input:	`"test","test"`+"\n"+`"test"`,
+			input:	"test,test\ntest",
 			error:	"Columns in CSV not equal",
 		}}
 		verify_test(t, tests)
@@ -122,7 +122,7 @@ func Test_error(t *testing.T){
 			reader:	func(t *testing.T) *Reader {
 				return NewReader("")
 			},
-			input:	`"head",,"head"`+"\n"+`"test","test","test"`+"\n"+`"test","test","test"`,
+			input:	"head,,head\ntest,test,test\ntest,test,test",
 			error:	"Column headers cannot be empty",
 		}}
 		verify_test(t, tests)
@@ -133,7 +133,7 @@ func Test_error(t *testing.T){
 			reader:	func(t *testing.T) *Reader {
 				return NewReader("")
 			},
-			input:	`"head","100,00","head"`+"\n"+`"test","test","test"`+"\n"+`"test","test","test"`,
+			input:	"head,100,head\ntest,test,test\ntest,test,test",
 			error:	"Column headers in CSV required",
 		}}
 		verify_test(t, tests)
@@ -147,27 +147,15 @@ func Test_ouput(t *testing.T){
 				return NewReader("").
 					Ignore_header()
 			},
-			input:	`"test","test","test"`+"\n"+`"test"`+"\n"+`"test","test"`,
+			input:	"test,test,test\ntest\ntest,test",
 			rows:	"test,test,test\ntest,,\ntest,test,",
 		},{
 			reader:	func(t *testing.T) *Reader {
 				return NewReader("").
 					Ignore_header()
 			},
-			input:	`"test","test"`+"\n"+`"test"`+"\n"+`"test","test","test"`,
+			input:	"test,test\ntest\ntest,test,test",
 			rows:	"test,test,\ntest,,\ntest,test,test",
-		}}
-		verify_test(t, tests)
-	})
-	
-	t.Run("header and rows", func(t *testing.T){
-		tests := []test_output{{
-			reader:	func(t *testing.T) *Reader {
-				return NewReader("")
-			},
-			input:	`"head","head","head"`+"\n"+`"test","test","test"`+"\n"+`"test","test","test"`,
-			header:	"head,head,head",
-			rows:	"test,test,test\ntest,test,test",
 		}}
 		verify_test(t, tests)
 	})
@@ -178,9 +166,51 @@ func Test_ouput(t *testing.T){
 				return NewReader("").
 					Remove_empty_cols()
 			},
-			input:	`"head","head","head"`+"\n"+`"test","","test"`+"\n"+`"test","","test"`,
+			input:	"head,head,head\ntest,,test\ntest,,test",
 			header:	"head,head",
 			rows:	"test,test\ntest,test",
+		},{
+			reader:	func(t *testing.T) *Reader {
+				return NewReader("").
+					Remove_empty_cols()
+			},
+			input:	"head,,head\ntest,,test\ntest,,test",
+			header:	"head,head",
+			rows:	"test,test\ntest,test",
+		}}
+		verify_test(t, tests)
+	})
+	
+	t.Run("header and rows", func(t *testing.T){
+		tests := []test_output{{
+			reader:	func(t *testing.T) *Reader {
+				return NewReader("")
+			},
+			input:	"head,head,head\ntest,test,test\ntest,test,test",
+			header:	"head,head,head",
+			rows:	"test,test,test\ntest,test,test",
+		},{
+			reader:	func(t *testing.T) *Reader {
+				return NewReader("").
+					Optional_header()
+			},
+			input:	"head,head,head\ntest,test,test\ntest,test,test",
+			header:	"head,head,head",
+			rows:	"test,test,test\ntest,test,test",
+		},{
+			reader:	func(t *testing.T) *Reader {
+				return NewReader("").
+					Optional_header()
+			},
+			input:	"test,,test\ntest,test,test",
+			rows:	"test,,test\ntest,test,test",
+		},{
+			reader:	func(t *testing.T) *Reader {
+				return NewReader("").
+					Ignore_header()
+			},
+			input:	"head,head,head\ntest,test,test\ntest,test,test",
+			rows:	"head,head,head\ntest,test,test\ntest,test,test",
 		}}
 		verify_test(t, tests)
 	})

@@ -157,7 +157,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 	r.log_options()
 	
 	if r.options[opt_optional_header] && r.options[opt_ignore_header] {
-		return table{}, &Error{`Options "optional_header" and "ignore_header" can not be used in conjunction`, nil}
+		return table{}, &Error{"Options 'optional_header' and 'ignore_header' can not be used in conjunction", nil}
 	}
 	
 	if mimetype == MIME_XLS || mimetype == MIME_XLXS {
