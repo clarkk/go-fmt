@@ -180,7 +180,6 @@ func (r *Reader) parse(mimetype string) (table, error){
 		r.log_append("Unable to parse CSV")
 		return table{}, &Error{"Unable to parse CSV", err}
 	}
-	
 	r.parse_lines(lines)
 	
 	if len(r.out) == 0 {
