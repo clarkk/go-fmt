@@ -8,7 +8,7 @@ import (
 
 type (
 	tester interface {
-		verify(t *testing.T)
+		verify(*testing.T)
 	}
 	
 	test_error struct {
@@ -46,14 +46,19 @@ func (o test_output) verify(t *testing.T){
 		t.Fatalf("Unexpected error: %s", err)
 	}
 	
+	header := strings.Join(out.Header, ",")
+	if header != o.header {
+		t.Fatalf("Want: %s\n\nGot: %s", o.header, header)
+	}
+	
 	s := []string{}
 	for _, line := range out.Rows {
 		s = append(s, strings.Join(line.Row, ","))
 	}
 	
-	result := strings.Join(s, "\n")
-	if result != o.rows {
-		t.Fatalf("Want: %s\n\nGot: %s", o.rows, result)
+	rows := strings.Join(s, "\n")
+	if rows != o.rows {
+		t.Fatalf("Want: %s\n\nGot: %s", o.rows, rows)
 	}
 	
 	fmt.Println(strings.Join(r.Log(), "\n"))
@@ -156,59 +161,27 @@ func Test_ouput(t *testing.T){
 	})
 	
 	t.Run("header and rows", func(t *testing.T){
-		s 				:= `"head","head","head"`+"\n"+`"test","test","test"`+"\n"+`"test","test","test"`
-		header 			:= "head,head,head"
-		rows			:= "test,test,test\ntest,test,test"
-		
-		r := NewReader("")
-		out, err := r.Bytes([]byte(s), "")
-		if err != nil {
-			t.Fatalf("Unexpected error: %s", err)
-		}
-		
-		result_header := strings.Join(out.Header, ",")
-		if result_header != header {
-			t.Fatalf("Want: %s\n\nGot: %s", header, result_header)
-		}
-		
-		var str []string
-		for _, line := range out.Rows {
-			str = append(str, strings.Join(line.Row, ","))
-		}
-		result_rows := strings.Join(str, "\n")
-		if result_rows != rows {
-			t.Fatalf("Want: %s\n\nGot: %s", rows, result_rows)
-		}
-		
-		fmt.Println(strings.Join(r.Log(), "\n"))
+		tests := []test_output{{
+			reader:	func(t *testing.T) *Reader {
+				return NewReader("")
+			},
+			input:	`"head","head","head"`+"\n"+`"test","test","test"`+"\n"+`"test","test","test"`,
+			header:	"head,head,head",
+			rows:	"test,test,test\ntest,test,test",
+		}}
+		verify_test(t, tests)
 	})
 	
 	t.Run("remove empty columns", func(t *testing.T){
-		s 				:= `"head","head","head"`+"\n"+`"test","","test"`+"\n"+`"test","","test"`
-		header 			:= "head,head"
-		rows			:= "test,test\ntest,test"
-		
-		r := NewReader("").
-			Remove_empty_cols()
-		out, err := r.Bytes([]byte(s), "")
-		if err != nil {
-			t.Fatalf("Unexpected error: %s", err)
-		}
-		
-		result_header := strings.Join(out.Header, ",")
-		if result_header != header {
-			t.Fatalf("Want: %s\n\nGot: %s", header, result_header)
-		}
-		
-		var str []string
-		for _, line := range out.Rows {
-			str = append(str, strings.Join(line.Row, ","))
-		}
-		result_rows := strings.Join(str, "\n")
-		if result_rows != rows {
-			t.Fatalf("Want: %s\n\nGot: %s", rows, result_rows)
-		}
-		
-		fmt.Println(strings.Join(r.Log(), "\n"))
+		tests := []test_output{{
+			reader:	func(t *testing.T) *Reader {
+				return NewReader("").
+					Remove_empty_cols()
+			},
+			input:	`"head","head","head"`+"\n"+`"test","","test"`+"\n"+`"test","","test"`,
+			header:	"head,head",
+			rows:	"test,test\ntest,test",
+		}}
+		verify_test(t, tests)
 	})
 }
