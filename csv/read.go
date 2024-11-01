@@ -438,6 +438,10 @@ func (r *Reader) col_integrity(cols []int) error {
 }
 
 func (r *Reader) get_separator(s string){
+	if r.get_separator_lines(s) {
+		return
+	}
+	
 	count := map[rune]int{}
 	for _, sep := range separators {
 		count[sep] = strings.Count(s, string(sep))
@@ -455,6 +459,39 @@ func (r *Reader) get_separator(s string){
 	})
 	
 	r.separator = keys[0]
+	r.log_append("Separator detected by total occurrence: "+string(r.separator))
+}
+
+func (r *Reader) get_separator_lines(s string) bool {
+	count_lines := map[rune][]int{}
+	for _, sep := range separators {
+		count_lines[sep] = []int{}
+	}
+	
+	for _, line := range strings.Split(s, "\n") {
+		if line == "" {
+			continue
+		}
+		
+		for sep := range count_lines {
+			count_lines[sep] = append(count_lines[sep], strings.Count(line, string(sep)))
+		}
+	}
+	
+	for sep, count := range count_lines {
+		max := slices.Max(count)
+		if max == 0 {
+			continue
+		}
+		
+		if max == slices.Min(count) {
+			r.separator = sep
+			r.log_append("Separator detected by line occurrence: "+string(r.separator))
+			return true
+		}
+	}
+	
+	return false
 }
 
 func (r *Reader) src_convert_file(file string) error {
