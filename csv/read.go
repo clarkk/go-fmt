@@ -457,7 +457,7 @@ func (r *Reader) get_separator(s string) error {
 	}
 	
 	r.separator = sep
-	r.log_append("Separator detected by total occurrence: "+string(r.separator))
+	r.log_append("Separator: "+string(r.separator))
 	return nil
 }
 
@@ -478,7 +478,7 @@ func (r *Reader) get_separator_lines(s string) bool {
 	}
 	
 	r.separator = sep
-	r.log_append("Separator detected by line occurrence: "+string(r.separator))
+	r.log_append("Separator (lines): "+string(r.separator))
 	return true
 }
 
