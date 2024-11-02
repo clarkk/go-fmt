@@ -185,8 +185,8 @@ func (r *Reader) parse(mimetype string) (table, error){
 			r.log_non_printable()
 			return table{}, &Error{"Invalid file encoding", nil}
 		}
-		r.log_append("Unable to parse CSV")
-		return table{}, &Error{"Unable to parse CSV", err}
+		r.log_append("Unable to parse CSV: "+err.Error())
+		return table{}, &Error{"Unable to parse CSV: "+err.Error(), err}
 	}
 	r.parse_lines(lines)
 	
