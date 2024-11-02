@@ -170,7 +170,10 @@ func (r *Reader) parse(mimetype string) (table, error){
 		}
 	}
 	
-	r.encoding()
+	if err := r.encoding(); err != nil {
+		return table{}, &Error{"Unable to parse CSV", err}
+	}
+	
 	read := csv.NewReader(bytes.NewBuffer(r.src_encoded))
 	read.FieldsPerRecord	= -1
 	read.Comma				= r.separator
@@ -240,7 +243,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 	}, nil
 }
 
-func (r *Reader) encoding(){
+func (r *Reader) encoding() error {
 	var src []byte
 	if len(r.src_converted) != 0 {
 		src = r.src_converted
@@ -254,8 +257,7 @@ func (r *Reader) encoding(){
 		s = sanitize.Filter_utf8mb3(s)
 		s = sanitize.Trim(s, true)
 		r.log_append("UTF8 BOM found")
-		r.src_encoding(s)
-		return
+		return r.src_encoding(s)
 	}
 	
 	s := string(src)
@@ -265,8 +267,7 @@ func (r *Reader) encoding(){
 		s = sanitize.Filter_utf8mb3(s)
 		s = sanitize.Trim(s, true)
 		r.log_append("UTF8 validated")
-		r.src_encoding(s)
-		return
+		return r.src_encoding(s)
 	}
 	
 	//	Encode UTF8
@@ -279,7 +280,7 @@ func (r *Reader) encoding(){
 	s = sanitize.Filter_utf8mb3(s)
 	s = sanitize.Trim(s, true)
 	r.log_append("UTF8 encoded")
-	r.src_encoding(s)
+	return r.src_encoding(s)
 }
 
 func (r *Reader) convert_xls() error {
@@ -440,9 +441,9 @@ func (r *Reader) col_integrity(cols []int) error {
 	return &Error{"Columns in CSV not equal", nil}
 }
 
-func (r *Reader) get_separator(s string){
+func (r *Reader) get_separator(s string) error {
 	if r.get_separator_lines(s) {
-		return
+		return nil
 	}
 	
 	c := newCount_sep()
@@ -450,8 +451,14 @@ func (r *Reader) get_separator(s string){
 		c.count_sep(sep, strings.Count(s, string(sep)))
 	}
 	
-	r.separator = c.get_sep()
+	sep, err := c.get_sep()
+	if err != nil {
+		return err
+	}
+	
+	r.separator = sep
 	r.log_append("Separator detected by total occurrence: "+string(r.separator))
+	return nil
 }
 
 func (r *Reader) get_separator_lines(s string) bool {
@@ -464,12 +471,15 @@ func (r *Reader) get_separator_lines(s string) bool {
 			c.count_lines_sep(sep, strings.Count(line, string(sep)))
 		}
 	}
-	if sep := c.get_lines_sep(); sep != 0 {
-		r.separator = sep
-		r.log_append("Separator detected by line occurrence: "+string(r.separator))
-		return true
+	
+	sep, err := c.get_lines_sep()
+	if err != nil {
+		return false
 	}
-	return false
+	
+	r.separator = sep
+	r.log_append("Separator detected by line occurrence: "+string(r.separator))
+	return true
 }
 
 func (r *Reader) src_convert_file(file string) error {
@@ -481,10 +491,10 @@ func (r *Reader) src_convert_file(file string) error {
 	return nil
 }
 
-func (r *Reader) src_encoding(s string){
+func (r *Reader) src_encoding(s string) error {
 	r.src_encoded	= []byte(s)
 	r.non_printable = sanitize.Non_printable(s)
-	r.get_separator(s)
+	return r.get_separator(s)
 }
 
 func (r *Reader) cols() []int {

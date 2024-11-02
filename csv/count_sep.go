@@ -1,6 +1,7 @@
 package csv
 
 import (
+	"fmt"
 	"sort"
 	"slices"
 )
@@ -29,8 +30,13 @@ func (c *count_sep) count_lines_sep(sep rune, count int){
 	c.count_lines[sep] = append(c.count_lines[sep], count)
 }
 
-func (c *count_sep) get_sep() rune {
-	keys := make([]rune, len(c.count))
+func (c *count_sep) get_sep() (rune, error){
+	length := len(c.count)
+	if length == 0 {
+		return 0, fmt.Errorf("Unable to find separator candidates")
+	}
+	
+	keys := make([]rune, length)
 	i := 0
 	for sep := range c.count {
 		keys[i] = sep
@@ -39,10 +45,10 @@ func (c *count_sep) get_sep() rune {
 	sort.Slice(keys, func(i, j int) bool {
 		return c.count[keys[i]] > c.count[keys[j]]
 	})
-	return keys[0]
+	return keys[0], nil
 }
 
-func (c *count_sep) get_lines_sep() rune {
+func (c *count_sep) get_lines_sep() (rune, error){
 	for sep, count := range c.count_lines {
 		max := slices.Max(count)
 		if max == 0 {
