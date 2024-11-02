@@ -1,0 +1,56 @@
+package csv
+
+import (
+	"sort"
+	"slices"
+)
+
+type count_sep struct {
+	count		map[rune]int
+	count_lines	map[rune][]int
+}
+
+func newCount_sep() *count_sep {
+	c := &count_sep{
+		count:			map[rune]int{},
+		count_lines:	map[rune][]int{},
+	}
+	for _, sep := range separators {
+		c.count_lines[sep] = []int{}
+	}
+	return c
+}
+
+func (c *count_sep) count_sep(sep rune, count int){
+	c.count[sep] = count
+}
+
+func (c *count_sep) count_lines_sep(sep rune, count int){
+	c.count_lines[sep] = append(c.count_lines[sep], count)
+}
+
+func (c *count_sep) get_sep() rune {
+	keys := make([]rune, len(c.count))
+	i := 0
+	for sep := range c.count {
+		keys[i] = sep
+		i++
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return c.count[keys[i]] > c.count[keys[j]]
+	})
+	return keys[0]
+}
+
+func (c *count_sep) get_lines_sep() rune {
+	for sep, count := range c.count_lines {
+		max := slices.Max(count)
+		if max == 0 {
+			continue
+		}
+		if max == slices.Min(count) {
+			c.count_sep(sep, max)
+		}
+	}
+	return c.get_sep()
+}

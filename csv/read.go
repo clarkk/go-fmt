@@ -3,7 +3,6 @@ package csv
 import (
 	"os"
 	"fmt"
-	"sort"
 	"slices"
 	"bytes"
 	"regexp"
@@ -34,9 +33,13 @@ const (
 )
 
 var (
-	separators		= [3]rune{',', ';', '\t'}
+	separators = []rune{
+		',',
+		';',
+		'\t',
+	}
 	
-	re_col_heading 	= regexp.MustCompile(`[^\pL\d]`)
+	re_col_heading = regexp.MustCompile(`[^\pL\d]`)
 )
 
 type (
@@ -442,55 +445,30 @@ func (r *Reader) get_separator(s string){
 		return
 	}
 	
-	count := map[rune]int{}
+	c := newCount_sep()
 	for _, sep := range separators {
-		count[sep] = strings.Count(s, string(sep))
+		c.count_sep(sep, strings.Count(s, string(sep)))
 	}
 	
-	keys := make([]rune, len(count))
-	i := 0
-	for sep := range count {
-		keys[i] = sep
-		i++
-	}
-	
-	sort.Slice(keys, func(i, j int) bool {
-		return count[keys[i]] > count[keys[j]]
-	})
-	
-	r.separator = keys[0]
+	r.separator = c.get_sep()
 	r.log_append("Separator detected by total occurrence: "+string(r.separator))
 }
 
 func (r *Reader) get_separator_lines(s string) bool {
-	count_lines := map[rune][]int{}
-	for _, sep := range separators {
-		count_lines[sep] = []int{}
-	}
-	
+	c := newCount_sep()
 	for _, line := range strings.Split(s, "\n") {
 		if line == "" {
 			continue
 		}
-		
-		for sep := range count_lines {
-			count_lines[sep] = append(count_lines[sep], strings.Count(line, string(sep)))
+		for _, sep := range separators {
+			c.count_lines_sep(sep, strings.Count(line, string(sep)))
 		}
 	}
-	
-	for sep, count := range count_lines {
-		max := slices.Max(count)
-		if max == 0 {
-			continue
-		}
-		
-		if max == slices.Min(count) {
-			r.separator = sep
-			r.log_append("Separator detected by line occurrence: "+string(r.separator))
-			return true
-		}
+	if sep := c.get_lines_sep(); sep != 0 {
+		r.separator = sep
+		r.log_append("Separator detected by line occurrence: "+string(r.separator))
+		return true
 	}
-	
 	return false
 }
 
