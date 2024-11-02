@@ -380,7 +380,7 @@ func (r *Reader) remove_empty_cols(){
 			continue
 		}
 		
-		r.log_append(fmt.Sprintf("Remove empty column index: %d", c))
+		r.log_append(fmt.Sprintf("Remove empty column: %d", c))
 		if len(r.out_header) != 0 {
 			r.out_header = append(r.out_header[:c], r.out_header[c+1:]...)
 		}
