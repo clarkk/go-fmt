@@ -184,14 +184,11 @@ func (r *Reader) parse(mimetype string) (table, error){
 			r.log_non_printable()
 			return table{}, &Error{"Invalid file encoding", nil}
 		}
-		
-		r.log_append("Unable to parse CSV")
 		return table{}, &Error{"Unable to parse CSV", err}
 	}
 	r.parse_lines(lines)
 	
 	if len(r.out) == 0 {
-		r.log_append("CSV empty")
 		return table{}, &Error{"CSV empty", nil}
 	}
 	
@@ -199,7 +196,6 @@ func (r *Reader) parse(mimetype string) (table, error){
 	
 	if !r.options[opt_ignore_header] {
 		if cols[0] < slices.Max(cols) {
-			r.log_append("Too few column headers")
 			return table{}, &Error{"Too few column headers", nil}
 		}
 	}
@@ -217,13 +213,13 @@ func (r *Reader) parse(mimetype string) (table, error){
 	}
 	
 	if r.options[opt_optional_header] {
-		if r.check_col_header(false) == nil {
+		if r.check_col_header() == nil {
 			if r.options[opt_remove_empty_cols] {
 				r.remove_empty_cols()
 			}
 		}
 	} else if !r.options[opt_ignore_header] {
-		if err := r.check_col_header(true); err != nil {
+		if err := r.check_col_header(); err != nil {
 			return table{}, err
 		}
 		
@@ -307,7 +303,6 @@ func (r *Reader) convert_xls() error {
 	file_name_csv := file_name+".csv"
 	c := cmd.Command{}
 	if err := c.Run("ssconvert "+file_name+" "+file_name_csv); err != nil {
-		r.log_append("Unable to convert XLS to CSV")
 		return &Error{"Unable to convert XLS to CSV", err}
 	}
 	defer os.Remove(file_name_csv)
@@ -390,15 +385,12 @@ func (r *Reader) remove_empty_cols(){
 	}
 }
 
-func (r *Reader) check_col_header(error_log bool) error {
+func (r *Reader) check_col_header() error {
 	has_heading := true
 	
 	first_row := r.out[0].Row
 	for _, value := range first_row {
 		if value == "" {
-			if error_log {
-				r.log_append("Column headers cannot be empty")
-			}
 			return &Error{"Column headers cannot be empty", nil}
 		}
 		
@@ -409,9 +401,6 @@ func (r *Reader) check_col_header(error_log bool) error {
 	}
 	
 	if !has_heading {
-		if error_log {
-			r.log_append("Column headers in CSV required")
-		}
 		return &Error{"Column headers in CSV required", nil}
 	} else {
 		r.log_append("Column headers found")
@@ -437,7 +426,6 @@ func (r *Reader) col_integrity(cols []int) error {
 	if slices.Max(cols) == slices.Min(cols) {
 		return nil
 	}
-	r.log_append("Columns in CSV not equal")
 	return &Error{"Columns in CSV not equal", nil}
 }
 
