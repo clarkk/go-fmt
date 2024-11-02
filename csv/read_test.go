@@ -25,52 +25,6 @@ type (
 	}
 )
 
-func (e test_error) verify(t *testing.T){
-	r := e.reader(t)
-	_, err := r.Bytes([]byte(e.input), "")
-	if err == nil {
-		t.Fatal("Expected an error")
-	}
-	
-	if err.Error() != e.error {
-		t.Fatalf("Expected error '%s', got '%v'", e.error, err)
-	}
-	
-	fmt.Println(strings.Join(r.Log(), "\n"))
-}
-
-func (o test_output) verify(t *testing.T){
-	r := o.reader(t)
-	out, err := r.Bytes([]byte(o.input), "")
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-	
-	header := strings.Join(out.Header, ",")
-	if header != o.header {
-		t.Fatalf("Want: %s\n\nGot: %s", o.header, header)
-	}
-	
-	s := make([]string, len(out.Rows))
-	for i, line := range out.Rows {
-		s[i] = strings.Join(line.Row, ",")
-	}
-	
-	rows := strings.Join(s, "\n")
-	if rows != o.rows {
-		t.Fatalf("Want: %s\n\nGot: %s", o.rows, rows)
-	}
-	
-	fmt.Println(strings.Join(r.Log(), "\n"))
-}
-
-func verify_test[T tester](t *testing.T, tests []T){
-	for i, tt := range tests {
-		fmt.Println("test:", i, "\n---")
-		tt.verify(t)
-	}
-}
-
 func Test_error(t *testing.T){
 	t.Run("unable to parse CSV", func(t *testing.T){
 		tests := []test_error{{
@@ -214,4 +168,50 @@ func Test_ouput(t *testing.T){
 		}}
 		verify_test(t, tests)
 	})
+}
+
+func (e test_error) verify(t *testing.T){
+	r := e.reader(t)
+	_, err := r.Bytes([]byte(e.input), "")
+	if err == nil {
+		t.Fatal("Expected an error")
+	}
+	
+	if err.Error() != e.error {
+		t.Fatalf("Expected error '%s', got '%v'", e.error, err)
+	}
+	
+	fmt.Println(strings.Join(r.Log(), "\n"))
+}
+
+func (o test_output) verify(t *testing.T){
+	r := o.reader(t)
+	out, err := r.Bytes([]byte(o.input), "")
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+	
+	header := strings.Join(out.Header, ",")
+	if header != o.header {
+		t.Fatalf("Want: %s\n\nGot: %s", o.header, header)
+	}
+	
+	s := make([]string, len(out.Rows))
+	for i, line := range out.Rows {
+		s[i] = strings.Join(line.Row, ",")
+	}
+	
+	rows := strings.Join(s, "\n")
+	if rows != o.rows {
+		t.Fatalf("Want: %s\n\nGot: %s", o.rows, rows)
+	}
+	
+	fmt.Println(strings.Join(r.Log(), "\n"))
+}
+
+func verify_test[T tester](t *testing.T, tests []T){
+	for i, tt := range tests {
+		fmt.Println("test:", i, "\n---")
+		tt.verify(t)
+	}
 }

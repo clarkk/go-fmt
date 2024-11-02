@@ -171,7 +171,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 	}
 	
 	if err := r.encoding(); err != nil {
-		return table{}, &Error{"Unable to parse CSV", err}
+		return table{}, &Error{err.Error(), nil}
 	}
 	
 	read := csv.NewReader(bytes.NewBuffer(r.src_encoded))
@@ -494,6 +494,11 @@ func (r *Reader) src_convert_file(file string) error {
 func (r *Reader) src_encoding(s string) error {
 	r.src_encoded	= []byte(s)
 	r.non_printable = sanitize.Non_printable(s)
+	
+	if s == "" {
+		return fmt.Errorf("CSV empty")
+	}
+	
 	return r.get_separator(s)
 }
 
