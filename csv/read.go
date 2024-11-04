@@ -195,21 +195,28 @@ func (r *Reader) parse(mimetype string) (table, error){
 		return table{}, &Error{"CSV empty", nil}
 	}
 	
-	cols := r.cols()
+	cols		:= r.cols()
+	cols_max	:= slices.Max(cols)
+	cols_min	:= slices.Min(cols)
+	
+	if cols_max == 1 {
+		r.log_append("Must have more than one column")
+		return table{}, &Error{"Must have more than one column", nil}
+	}
 	
 	if !r.options[opt_ignore_header] {
-		if cols[0] < slices.Max(cols) {
+		if cols[0] < cols_max {
 			r.log_append("Too few column headers")
 			return table{}, &Error{"Too few column headers", nil}
 		}
 	}
 	
 	if r.options[opt_col_integrity] {
-		if err := r.col_integrity(cols); err != nil {
+		if err := r.col_integrity(cols_max, cols_min); err != nil {
 			return table{}, err
 		}
 	} else {
-		r.fill_empty_cols(cols)
+		r.fill_empty_cols(cols_max)
 	}
 	
 	if r.options[opt_remove_empty_cols] {
@@ -421,20 +428,19 @@ func (r *Reader) check_col_header(error_log bool) error {
 	return nil
 }
 
-func (r *Reader) fill_empty_cols(cols []int){
-	max := slices.Max(cols)
+func (r *Reader) fill_empty_cols(cols_max int){
 	for t, row := range r.out {
 		l := len(row.Row)
-		if max != l {
-			for i := 0; i < max - l; i++ {
+		if cols_max != l {
+			for i := 0; i < cols_max - l; i++ {
 				r.out[t].Row = append(r.out[t].Row, "")
 			}
 		}
 	}
 }
 
-func (r *Reader) col_integrity(cols []int) error {
-	if slices.Max(cols) == slices.Min(cols) {
+func (r *Reader) col_integrity(cols_max, cols_min int) error {
+	if cols_max == cols_min {
 		return nil
 	}
 	r.log_append("Columns in CSV not equal")

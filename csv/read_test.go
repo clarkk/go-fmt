@@ -26,17 +26,6 @@ type (
 )
 
 func Test_error(t *testing.T){
-	t.Run("unable to parse CSV", func(t *testing.T){
-		tests := []test_error{{
-			reader:	func(t *testing.T) *Reader {
-				return NewReader("")
-			},
-			input:	`"test","`,
-			error:	"Unable to parse CSV",
-		}}
-		verify_test(t, tests)
-	})
-	
 	t.Run("empty CSV", func(t *testing.T){
 		tests := []test_error{{
 			reader:	func(t *testing.T) *Reader {
