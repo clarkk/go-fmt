@@ -183,14 +183,14 @@ func (r *Reader) parse(mimetype string) (table, error){
 	if err != nil {
 		if r.non_printable != "" {
 			r.log_non_printable()
-			return table{}, &Error{"Invalid file encoding", nil}
+			return table{}, &Error{"Invalid CSV file encoding", nil}
 		}
 		r.log_append("Unable to parse CSV: "+err.Error())
 		return table{}, &Error{"Unable to parse CSV: "+err.Error(), err}
 	}
 	r.parse_lines(lines)
 	
-	if len(r.out) == 0 {
+	if r.empty_rows() {
 		r.log_append("CSV empty")
 		return table{}, &Error{"CSV empty", nil}
 	}
@@ -200,14 +200,14 @@ func (r *Reader) parse(mimetype string) (table, error){
 	cols_min	:= slices.Min(cols)
 	
 	if cols_max == 1 {
-		r.log_append("Must have more than one column")
-		return table{}, &Error{"Must have more than one column", nil}
+		r.log_append("CSV must have more than one column")
+		return table{}, &Error{"CSV must have more than one column", nil}
 	}
 	
 	if !r.options[opt_ignore_header] {
 		if cols[0] < cols_max {
-			r.log_append("Too few column headers")
-			return table{}, &Error{"Too few column headers", nil}
+			r.log_append("CSV has too few column headers")
+			return table{}, &Error{"CSV has too few column headers", nil}
 		}
 	}
 	
@@ -225,6 +225,11 @@ func (r *Reader) parse(mimetype string) (table, error){
 	
 	if r.options[opt_optional_header] {
 		if r.check_col_header(false) == nil {
+			if r.empty_rows() {
+				r.log_append("CSV empty")
+				return table{}, &Error{"CSV empty", nil}
+			}
+			
 			if r.options[opt_remove_empty_cols] {
 				r.remove_empty_cols()
 			}
@@ -232,6 +237,11 @@ func (r *Reader) parse(mimetype string) (table, error){
 	} else if !r.options[opt_ignore_header] {
 		if err := r.check_col_header(true); err != nil {
 			return table{}, err
+		}
+		
+		if r.empty_rows() {
+			r.log_append("CSV empty")
+			return table{}, &Error{"CSV empty", nil}
 		}
 		
 		if r.options[opt_remove_empty_cols] {
@@ -537,4 +547,8 @@ func (r *Reader) log_options(){
 
 func (r *Reader) log_append(s string){
 	r.log = append(r.log, s)
+}
+
+func (r *Reader) empty_rows() bool {
+	return len(r.out) == 0
 }

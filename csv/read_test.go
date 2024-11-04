@@ -43,7 +43,7 @@ func Test_error(t *testing.T){
 				return NewReader("")
 			},
 			input:	"test\ntest,test",
-			error:	"Too few column headers",
+			error:	"CSV has too few column headers",
 		}}
 		verify_test(t, tests)
 	})
