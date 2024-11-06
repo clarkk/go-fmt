@@ -26,10 +26,11 @@ const (
 	MIME_XLS		= "application/vnd.ms-excel"
 	MIME_XLXS		= "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 	
-	opt_col_integrity		= "col_integrity"
-	opt_remove_empty_cols	= "remove_empty_cols"
-	opt_optional_header		= "optional_header"
-	opt_ignore_header		= "ignore_header"
+	opt_col_integrity			= "col_integrity"
+	opt_remove_empty_cols		= "remove_empty_cols"
+	opt_remove_overflow_cols	= "remove_overflow_cols"
+	opt_optional_header			= "optional_header"
+	opt_ignore_header			= "ignore_header"
 )
 
 var (
@@ -51,7 +52,9 @@ type (
 		src				[]byte
 		src_converted	[]byte
 		src_encoded		[]byte
+		
 		separator		rune
+		checked_header	bool
 		out 			Rows
 		out_header		[]string
 		
@@ -78,10 +81,11 @@ type (
 func NewReader(tmp_dir string) *Reader {
 	return &Reader{
 		options: map[string]bool{
-			opt_col_integrity:		false,
-			opt_remove_empty_cols:	false,
-			opt_optional_header:	false,
-			opt_ignore_header:		false,
+			opt_col_integrity:			false,
+			opt_remove_empty_cols:		false,
+			opt_remove_overflow_cols:	false,
+			opt_optional_header:		false,
+			opt_ignore_header:			false,
 		},
 		tmp_dir: tmp_dir,
 	}
@@ -141,6 +145,12 @@ func (r *Reader) Remove_empty_cols() *Reader {
 	return r
 }
 
+//	Remove overflow colums
+func (r *Reader) Remove_overflow_cols() *Reader {
+	r.options[opt_remove_overflow_cols] = true
+	return r
+}
+
 //	Optional column header
 func (r *Reader) Optional_header() *Reader {
 	r.options[opt_optional_header] = true
@@ -162,6 +172,14 @@ func (r *Reader) parse(mimetype string) (table, error){
 	
 	if r.options[opt_optional_header] && r.options[opt_ignore_header] {
 		return table{}, &Error{"Options 'optional_header' and 'ignore_header' can not be used in conjunction", nil}
+	}
+	
+	if r.options[opt_remove_overflow_cols] && r.options[opt_ignore_header] {
+		return table{}, &Error{"Options 'remove_overflow_cols' and 'ignore_header' can not be used in conjunction", nil}
+	}
+	
+	if r.options[opt_remove_overflow_cols] && r.options[opt_col_integrity] {
+		return table{}, &Error{"Options 'remove_overflow_cols' and 'col_integrity' can not be used in conjunction", nil}
 	}
 	
 	if mimetype == MIME_XLS || mimetype == MIME_XLXS {
@@ -190,63 +208,97 @@ func (r *Reader) parse(mimetype string) (table, error){
 	}
 	r.parse_lines(lines)
 	
-	if r.empty_rows() {
-		r.log_append("CSV empty")
-		return table{}, &Error{"CSV empty", nil}
+	if err := r.empty_rows(); err != nil {
+		return table{}, err
 	}
 	
 	cols		:= r.cols()
 	cols_max	:= slices.Max(cols)
-	cols_min	:= slices.Min(cols)
 	
-	if cols_max == 1 {
-		r.log_append("CSV must have more than one column")
-		return table{}, &Error{"CSV must have more than one column", nil}
+	if err := r.one_col(cols_max); err != nil {
+		return table{}, err
+	}
+	
+	//	Remove empty columns before check_header()
+	if r.options[opt_remove_empty_cols] {
+		r.remove_empty_cols()
+		
+		cols		= r.cols()
+		cols_max	= slices.Max(cols)
 	}
 	
 	if !r.options[opt_ignore_header] {
-		if cols[0] < cols_max {
+		if r.options[opt_remove_overflow_cols] {
+			if r.check_header(false) == nil {
+				if err := r.empty_rows(); err != nil {
+					return table{}, err
+				}
+				
+				if r.options[opt_remove_empty_cols] {
+					r.remove_empty_cols()
+					
+					cols		= r.cols()
+					cols_max	= slices.Max(cols)
+				}
+				
+				r.remove_overflow_cols()
+				
+				cols		= r.cols()
+				cols_max	= slices.Max(cols)
+			}
+		}
+		
+		if len(r.out_header) == 0 && cols[0] < cols_max {
 			r.log_append("CSV has too few column headers")
 			return table{}, &Error{"CSV has too few column headers", nil}
 		}
 	}
 	
 	if r.options[opt_col_integrity] {
-		if err := r.col_integrity(cols_max, cols_min); err != nil {
-			return table{}, err
+		if cols_max != slices.Min(cols) {
+			r.log_append("Columns in CSV not equal")
+			return table{}, &Error{"Columns in CSV not equal", nil}
 		}
 	} else {
 		r.fill_empty_cols(cols_max)
 	}
 	
-	if r.options[opt_remove_empty_cols] {
-		r.remove_empty_cols()
-	}
-	
-	if r.options[opt_optional_header] {
-		if r.check_col_header(false) == nil {
-			if r.empty_rows() {
-				r.log_append("CSV empty")
-				return table{}, &Error{"CSV empty", nil}
+	if !r.checked_header {
+		//	Optional column header
+		if r.options[opt_optional_header] {
+			if r.check_header(false) == nil {
+				if err := r.empty_rows(); err != nil {
+					return table{}, err
+				}
+				
+				if r.options[opt_remove_empty_cols] {
+					r.remove_empty_cols()
+					
+					cols		= r.cols()
+					cols_max	= slices.Max(cols)
+				}
+			}
+		//	Require column header
+		} else if !r.options[opt_ignore_header] {
+			if err := r.check_header(true); err != nil {
+				return table{}, err
+			}
+			
+			if err := r.empty_rows(); err != nil {
+				return table{}, err
 			}
 			
 			if r.options[opt_remove_empty_cols] {
 				r.remove_empty_cols()
+				
+				cols		= r.cols()
+				cols_max	= slices.Max(cols)
 			}
 		}
-	} else if !r.options[opt_ignore_header] {
-		if err := r.check_col_header(true); err != nil {
-			return table{}, err
-		}
-		
-		if r.empty_rows() {
-			r.log_append("CSV empty")
-			return table{}, &Error{"CSV empty", nil}
-		}
-		
-		if r.options[opt_remove_empty_cols] {
-			r.remove_empty_cols()
-		}
+	}
+	
+	if err := r.one_col(cols_max); err != nil {
+		return table{}, err
 	}
 	
 	if r.non_printable != "" {
@@ -383,7 +435,8 @@ func (r *Reader) parse_lines(lines [][]string){
 }
 
 func (r *Reader) remove_empty_cols(){
-	cols := make([]bool, len(r.out[0].Row))
+	cols_max	:= slices.Max(r.cols())
+	cols		:= make([]bool, cols_max)
 	for _, row := range r.out {
 		for i, value := range row.Row {
 			if value != "" {
@@ -392,23 +445,37 @@ func (r *Reader) remove_empty_cols(){
 		}
 	}
 	
-	for c := len(cols)-1; c >= 0; c-- {
+	for c := cols_max - 1; c >= 0; c-- {
 		if cols[c] {
 			continue
 		}
 		
 		r.log_append(fmt.Sprintf("Remove empty column: %d", c))
-		if len(r.out_header) != 0 {
+		if len(r.out_header) > c {
 			r.out_header = append(r.out_header[:c], r.out_header[c+1:]...)
 		}
 		for i := range r.out {
-			r.out[i].Row = append(r.out[i].Row[:c], r.out[i].Row[c+1:]...)
+			if len(r.out[i].Row) > c {
+				r.out[i].Row = append(r.out[i].Row[:c], r.out[i].Row[c+1:]...)
+			}
 		}
 	}
 }
 
-func (r *Reader) check_col_header(error_log bool) error {
-	has_heading := true
+func (r *Reader) remove_overflow_cols(){
+	cols_max := len(r.out_header)
+	for i, row := range r.out {
+		l := len(row.Row)
+		if l > cols_max {
+			r.log_append(fmt.Sprintf("Remove overflow columns row: %d", i))
+			r.out[i].Row = r.out[i].Row[:cols_max]
+		}
+	}
+}
+
+func (r *Reader) check_header(error_log bool) error {
+	r.checked_header	= true
+	has_heading			:= true
 	
 	first_row := r.out[0].Row
 	for _, value := range first_row {
@@ -441,20 +508,13 @@ func (r *Reader) check_col_header(error_log bool) error {
 func (r *Reader) fill_empty_cols(cols_max int){
 	for t, row := range r.out {
 		l := len(row.Row)
-		if cols_max != l {
+		if l != cols_max {
+			r.log_append(fmt.Sprintf("Fill empty columns row: %d", t))
 			for i := 0; i < cols_max - l; i++ {
 				r.out[t].Row = append(r.out[t].Row, "")
 			}
 		}
 	}
-}
-
-func (r *Reader) col_integrity(cols_max, cols_min int) error {
-	if cols_max == cols_min {
-		return nil
-	}
-	r.log_append("Columns in CSV not equal")
-	return &Error{"Columns in CSV not equal", nil}
 }
 
 func (r *Reader) get_separator(s string) error {
@@ -549,6 +609,18 @@ func (r *Reader) log_append(s string){
 	r.log = append(r.log, s)
 }
 
-func (r *Reader) empty_rows() bool {
-	return len(r.out) == 0
+func (r *Reader) empty_rows() error {
+	if len(r.out) == 0 {
+		r.log_append("CSV empty")
+		return &Error{"CSV empty", nil}
+	}
+	return nil
+}
+
+func (r *Reader) one_col(cols_max int) error {
+	if cols_max == 1 {
+		r.log_append("CSV must have more than one column")
+		return &Error{"CSV must have more than one column", nil}
+	}
+	return nil
 }
