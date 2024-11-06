@@ -208,14 +208,14 @@ func (r *Reader) parse(mimetype string) (table, error){
 	}
 	r.parse_lines(lines)
 	
-	if err := r.empty_rows(); err != nil {
+	if err := r.empty_rows_error(); err != nil {
 		return table{}, err
 	}
 	
 	cols		:= r.cols()
 	cols_max	:= slices.Max(cols)
 	
-	if err := r.one_col(cols_max); err != nil {
+	if err := r.one_col_error(cols_max); err != nil {
 		return table{}, err
 	}
 	
@@ -230,7 +230,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 	if !r.options[opt_ignore_header] {
 		if r.options[opt_remove_overflow_cols] {
 			if r.check_header(false) == nil {
-				if err := r.empty_rows(); err != nil {
+				if err := r.empty_rows_error(); err != nil {
 					return table{}, err
 				}
 				
@@ -267,7 +267,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 		//	Optional column header
 		if r.options[opt_optional_header] {
 			if r.check_header(false) == nil {
-				if err := r.empty_rows(); err != nil {
+				if err := r.empty_rows_error(); err != nil {
 					return table{}, err
 				}
 				
@@ -284,7 +284,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 				return table{}, err
 			}
 			
-			if err := r.empty_rows(); err != nil {
+			if err := r.empty_rows_error(); err != nil {
 				return table{}, err
 			}
 			
@@ -297,7 +297,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 		}
 	}
 	
-	if err := r.one_col(cols_max); err != nil {
+	if err := r.one_col_error(cols_max); err != nil {
 		return table{}, err
 	}
 	
@@ -609,7 +609,7 @@ func (r *Reader) log_append(s string){
 	r.log = append(r.log, s)
 }
 
-func (r *Reader) empty_rows() error {
+func (r *Reader) empty_rows_error() error {
 	if len(r.out) == 0 {
 		r.log_append("CSV empty")
 		return &Error{"CSV empty", nil}
@@ -617,7 +617,7 @@ func (r *Reader) empty_rows() error {
 	return nil
 }
 
-func (r *Reader) one_col(cols_max int) error {
+func (r *Reader) one_col_error(cols_max int) error {
 	if cols_max == 1 {
 		r.log_append("CSV must have more than one column")
 		return &Error{"CSV must have more than one column", nil}
