@@ -465,8 +465,7 @@ func (r *Reader) remove_empty_cols(){
 func (r *Reader) remove_overflow_cols(){
 	cols_max := len(r.out_header)
 	for i, row := range r.out {
-		l := len(row.Row)
-		if l > cols_max {
+		if len(row.Row) > cols_max {
 			r.log_append(fmt.Sprintf("Remove overflow columns row: %d", i))
 			r.out[i].Row = r.out[i].Row[:cols_max]
 		}
