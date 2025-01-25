@@ -1,0 +1,6 @@
+github.com/clarkk/go-util v0.0.0-20241220120558-27583fc250c4 h1:q4cJ2zvlkTxj4NgHO6Q8Ra+fU0WzKwMKdqxLeA6MQyI=
+github.com/clarkk/go-util v0.0.0-20241220120558-27583fc250c4/go.mod h1:CvYU+wU55ZeR9CaBaUrnxVk3/wSsw8k7AnYwcXw/grE=
+github.com/go-errors/errors v1.5.1 h1:ZwEMSLRCapFLflTpT7NKaAc7ukJ8ZPEjzlxt8rPN8bk=
+github.com/go-errors/errors v1.5.1/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3BopGUQ5a5Og=
+golang.org/x/sys v0.28.0 h1:Fksou7UEQUWlKvIdsqzJmUmCX3cZuD2+P3XyyzwMhlA=
+golang.org/x/sys v0.28.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
