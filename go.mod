@@ -1,6 +1,6 @@
 module github.com/clarkk/go-fmt
 
-go 1.23.4
+go 1.24.0
 
 require (
 	github.com/clarkk/go-util v0.0.0-20241220120558-27583fc250c4
