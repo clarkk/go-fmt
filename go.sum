@@ -1,6 +1,6 @@
-github.com/clarkk/go-util v0.0.0-20241220120558-27583fc250c4 h1:q4cJ2zvlkTxj4NgHO6Q8Ra+fU0WzKwMKdqxLeA6MQyI=
-github.com/clarkk/go-util v0.0.0-20241220120558-27583fc250c4/go.mod h1:CvYU+wU55ZeR9CaBaUrnxVk3/wSsw8k7AnYwcXw/grE=
+github.com/clarkk/go-util v0.0.0-20250301202443-803ac7233b4d h1:GPYvffLu84tQTIXt8WR1wz+vl/2/buSZC/2RBStsHQw=
+github.com/clarkk/go-util v0.0.0-20250301202443-803ac7233b4d/go.mod h1:01RrXGe2BSng1XUyLHYyuMD0Y0Kz2BtCkUI9GGiWaU0=
 github.com/go-errors/errors v1.5.1 h1:ZwEMSLRCapFLflTpT7NKaAc7ukJ8ZPEjzlxt8rPN8bk=
 github.com/go-errors/errors v1.5.1/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3BopGUQ5a5Og=
-golang.org/x/sys v0.28.0 h1:Fksou7UEQUWlKvIdsqzJmUmCX3cZuD2+P3XyyzwMhlA=
-golang.org/x/sys v0.28.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
+golang.org/x/sys v0.30.0 h1:QjkSwP/36a20jFYWkSue1YwXzLmsV5Gfq7Eiy72C1uc=
+golang.org/x/sys v0.30.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
