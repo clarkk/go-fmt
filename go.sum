@@ -1,5 +1,7 @@
 github.com/clarkk/go-util v0.0.0-20250301202443-803ac7233b4d h1:GPYvffLu84tQTIXt8WR1wz+vl/2/buSZC/2RBStsHQw=
 github.com/clarkk/go-util v0.0.0-20250301202443-803ac7233b4d/go.mod h1:01RrXGe2BSng1XUyLHYyuMD0Y0Kz2BtCkUI9GGiWaU0=
+github.com/clarkk/go-util v0.0.0-20250302110437-f7a532cdaee3 h1:6W1AIODleuYmE/Se2fk9eYqOIfdM1/GsnQl7NWmb3Sc=
+github.com/clarkk/go-util v0.0.0-20250302110437-f7a532cdaee3/go.mod h1:01RrXGe2BSng1XUyLHYyuMD0Y0Kz2BtCkUI9GGiWaU0=
 github.com/go-errors/errors v1.5.1 h1:ZwEMSLRCapFLflTpT7NKaAc7ukJ8ZPEjzlxt8rPN8bk=
 github.com/go-errors/errors v1.5.1/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3BopGUQ5a5Og=
 golang.org/x/sys v0.30.0 h1:QjkSwP/36a20jFYWkSue1YwXzLmsV5Gfq7Eiy72C1uc=
