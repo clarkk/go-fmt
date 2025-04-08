@@ -53,17 +53,20 @@ func Trim(s string, allow_newlines bool) string {
 	s = normalize(s)
 	
 	has_newline := strings.Contains(s, "\n")
-	if allow_newlines && has_newline {
-		lines := strings.Split(s, "\n")
-		for i, v := range lines {
-			lines[i] = strings.TrimSpace(v)
+	if has_newline {
+		if allow_newlines {
+			lines := strings.Split(s, "\n")
+			for i, v := range lines {
+				lines[i] = strings.TrimSpace(v)
+			}
+			s = strings.Join(lines, "\n")
+		} else {
+			s = strings.Replace(s, "\n", " ", -1)
+			s = strings.TrimSpace(s)
 		}
-		s = strings.Join(lines, "\n")
 	}
 	
-	s = strings.TrimSpace(s)
-	
-	if has_newline && strings.Contains(s, "\n\n\n") {
+	if has_newline && allow_newlines && strings.Contains(s, "\n\n\n") {
 		s = re_reduce_newlines.ReplaceAllString(s, "\n\n")
 	}
 	
