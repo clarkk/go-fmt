@@ -77,6 +77,24 @@ func Trim(s string, allow_newlines bool) string {
 	return s
 }
 
+func Truncate(s string, length int) string {
+	if len([]rune(s)) <= length {
+		return s
+	}
+	var (
+		truncated	string
+		count		int
+	)
+	for _, char := range s {
+		truncated += string(char)
+		count++
+		if count >= length {
+			break
+		}
+	}
+	return truncated
+}
+
 func Non_printable(s string) string {
 	return re_printable.ReplaceAllString(s, "")
 }
