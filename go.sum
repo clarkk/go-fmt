@@ -1,5 +1,5 @@
-github.com/clarkk/go-util v0.0.0-20250611102600-43eaa55a9c06 h1:t8FALH2JkYLv5pBzq5x9uokd5yCciqa+k78n3MHKx64=
-github.com/clarkk/go-util v0.0.0-20250611102600-43eaa55a9c06/go.mod h1:3bbh/ZChglkGSppVRBp9sFxRbb+pEQ3p0BrfK2n+K48=
+github.com/clarkk/go-util v0.0.0-20250708124851-29e7c9489e1d h1:FbqAnj86EeO0cTM9tqFy5YDD5F9TfatBU0cG2wn2Amg=
+github.com/clarkk/go-util v0.0.0-20250708124851-29e7c9489e1d/go.mod h1:m4nyVOjnWCVhDp+q9Gligtq/innpnwJDdHYFJ/xXkaA=
 github.com/go-errors/errors v1.5.1 h1:ZwEMSLRCapFLflTpT7NKaAc7ukJ8ZPEjzlxt8rPN8bk=
 github.com/go-errors/errors v1.5.1/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3BopGUQ5a5Og=
 github.com/go-json-experiment/json v0.0.0-20250626171732-1a886bd29d1b h1:ooF9/NzXkXL3OOLRwtPuQT/D7Kx2S5w/Kl1GnMF9h2s=
