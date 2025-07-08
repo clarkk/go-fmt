@@ -1,10 +1,8 @@
-github.com/clarkk/go-util v0.0.0-20250301202443-803ac7233b4d h1:GPYvffLu84tQTIXt8WR1wz+vl/2/buSZC/2RBStsHQw=
-github.com/clarkk/go-util v0.0.0-20250301202443-803ac7233b4d/go.mod h1:01RrXGe2BSng1XUyLHYyuMD0Y0Kz2BtCkUI9GGiWaU0=
-github.com/clarkk/go-util v0.0.0-20250302110437-f7a532cdaee3 h1:6W1AIODleuYmE/Se2fk9eYqOIfdM1/GsnQl7NWmb3Sc=
-github.com/clarkk/go-util v0.0.0-20250302110437-f7a532cdaee3/go.mod h1:01RrXGe2BSng1XUyLHYyuMD0Y0Kz2BtCkUI9GGiWaU0=
+github.com/clarkk/go-util v0.0.0-20250611102600-43eaa55a9c06 h1:t8FALH2JkYLv5pBzq5x9uokd5yCciqa+k78n3MHKx64=
+github.com/clarkk/go-util v0.0.0-20250611102600-43eaa55a9c06/go.mod h1:3bbh/ZChglkGSppVRBp9sFxRbb+pEQ3p0BrfK2n+K48=
 github.com/go-errors/errors v1.5.1 h1:ZwEMSLRCapFLflTpT7NKaAc7ukJ8ZPEjzlxt8rPN8bk=
 github.com/go-errors/errors v1.5.1/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3BopGUQ5a5Og=
-golang.org/x/sys v0.30.0 h1:QjkSwP/36a20jFYWkSue1YwXzLmsV5Gfq7Eiy72C1uc=
-golang.org/x/sys v0.30.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
-golang.org/x/sys v0.31.0 h1:ioabZlmFYtWhL+TRYpcnNlLwhyxaM9kWTDEmfnprqik=
-golang.org/x/sys v0.31.0/go.mod h1:BJP2sWEmIv4KK5OTEluFJCKSidICx8ciO85XgH3Ak8k=
+github.com/go-json-experiment/json v0.0.0-20250626171732-1a886bd29d1b h1:ooF9/NzXkXL3OOLRwtPuQT/D7Kx2S5w/Kl1GnMF9h2s=
+github.com/go-json-experiment/json v0.0.0-20250626171732-1a886bd29d1b/go.mod h1:TiCD2a1pcmjd7YnhGH0f/zKNcCD06B029pHhzV23c2M=
+golang.org/x/sys v0.33.0 h1:q3i8TbbEz+JRD9ywIRlyRAQbM0qF7hu24q3teo2hbuw=
+golang.org/x/sys v0.33.0/go.mod h1:BJP2sWEmIv4KK5OTEluFJCKSidICx8ciO85XgH3Ak8k=
