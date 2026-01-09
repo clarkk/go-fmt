@@ -2,7 +2,8 @@ package csv
 
 import (
 	"fmt"
-	"sort"
+	"cmp"
+	"slices"
 	"slices"
 )
 
@@ -42,8 +43,8 @@ func (c *count_sep) get_sep() (rune, error){
 		keys[i] = sep
 		i++
 	}
-	sort.Slice(keys, func(i, j int) bool {
-		return c.count[keys[i]] > c.count[keys[j]]
+	slices.SortFunc(keys, func(a, b rune) int {
+		return cmp.Compare(c.count[b], c.count[a])
 	})
 	return keys[0], nil
 }
