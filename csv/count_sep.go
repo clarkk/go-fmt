@@ -50,6 +50,9 @@ func (c *count_sep) get_sep() (rune, error){
 
 func (c *count_sep) get_lines_sep() (rune, error){
 	for sep, count := range c.count_lines {
+		if len(count) == 0 {
+			continue
+		}
 		max := slices.Max(count)
 		if max == 0 {
 			continue

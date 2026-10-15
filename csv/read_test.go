@@ -37,6 +37,12 @@ func Test_error(t *testing.T){
 			reader:	func(t *testing.T) *Reader {
 				return NewReader("")
 			},
+			input:	"\n",
+			error:	"CSV empty",
+		},{
+			reader:	func(t *testing.T) *Reader {
+				return NewReader("")
+			},
 			input:	"head1\ntest1",
 			error:	"CSV must have more than one column",
 		},{
