@@ -568,7 +568,7 @@ func (r *Reader) src_convert_file(file string) error {
 
 func (r *Reader) src_encoding(s string) error {
 	r.src_encoded	= []byte(s)
-	r.non_printable = sanitize.Non_printable(s)
+	r.non_printable = sanitize.Extract_non_printable(s)
 	
 	if s == "" {
 		return fmt.Errorf("CSV empty")

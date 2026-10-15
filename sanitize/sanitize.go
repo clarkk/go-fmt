@@ -3,7 +3,6 @@ package sanitize
 import (
 	"regexp"
 	"strings"
-	"unicode/utf8"
 )
 
 const (
@@ -21,32 +20,31 @@ const (
 )
 
 var (
-	re_space 			= regexp.MustCompile(NBSP_UTF8+`|`+ZWSP_UTF8)
-	re_hyphen 			= regexp.MustCompile(SHY_UTF8+`|`+NBHY_UTF8+`|`+ENDASH_UTF8)
 	re_reduce_newlines 	= regexp.MustCompile(`\n{3,}`)
-	re_reduce_spaces 	= regexp.MustCompile(` +`)
+	re_reduce_spaces 	= regexp.MustCompile(` {2,}`)
 	
 	//	https://www.regular-expressions.info/unicode.html
 	re_printable 		= regexp.MustCompile(`[\P{C}\n\r\t]`)
 	re_non_printable	= regexp.MustCompile(`[^\P{C}\n\r\t]`)
+	
+	normalizer = strings.NewReplacer(
+		"\r", "",
+		NBSP_UTF8, " ",
+		ZWSP_UTF8, " ",
+		SHY_UTF8, "",
+		NBHY_UTF8, "-",
+		ENDASH_UTF8, "-",
+	)
 )
 
 func Filter_utf8mb3(s string) string {
-	//	Strip invalid UTF8 chars
 	s = strings.ToValidUTF8(s, "")
-	//	Remvoe NULL bytes
-	s = strings.Replace(s, "\x00", "", -1)
-	//	Strip chars with more than 3 bytes
-	l := len(s)
-	out := make([]rune, 0, l)
-	for i := 0; i < l; {
-		r, n := utf8.DecodeRune([]byte(s[i:]))
-		if n < 4 {
-			out = append(out, r)
+	return strings.Map(func(r rune) rune {
+		if r == 0 || r > 0xFFFF {
+			return -1
 		}
-		i += n
-	}
-	return string(out)
+		return r
+	}, s)
 }
 
 func Trim(s string, allow_newlines bool) string {
@@ -56,20 +54,33 @@ func Trim(s string, allow_newlines bool) string {
 	if has_newline {
 		if allow_newlines {
 			lines := strings.Split(s, "\n")
+			//	Trim each line individually
 			for i, v := range lines {
 				lines[i] = strings.TrimSpace(v)
 			}
+			//	Remove empty lines in the beginning
+			for len(lines) > 0 && lines[0] == "" {
+				lines = lines[1:]
+			}
+			//	Remove empty lines in the end
+			for len(lines) > 0 && lines[len(lines)-1] == "" {
+				lines = lines[:len(lines)-1]
+			}
 			s = strings.Join(lines, "\n")
 		} else {
-			s = strings.Replace(s, "\n", " ", -1)
+			s = strings.ReplaceAll(s, "\n", " ")
 			s = strings.TrimSpace(s)
 		}
+	} else {
+		s = strings.TrimSpace(s)
 	}
 	
+	//	Reduce consecutive newlines to at most two
 	if has_newline && allow_newlines && strings.Contains(s, "\n\n\n") {
 		s = re_reduce_newlines.ReplaceAllString(s, "\n\n")
 	}
 	
+	//	Reduce consecutive spaces
 	if strings.Contains(s, "  ") {
 		s = re_reduce_spaces.ReplaceAllString(s, " ")
 	}
@@ -77,25 +88,24 @@ func Trim(s string, allow_newlines bool) string {
 	return s
 }
 
+//	UTF8 safe
 func Truncate(s string, length int) string {
-	if len([]rune(s)) <= length {
+	if length <= 0 {
+		return ""
+	}
+	if len(s) <= length {
 		return s
 	}
-	var (
-		truncated	string
-		count		int
-	)
-	for _, char := range s {
-		truncated += string(char)
-		count++
-		if count >= length {
-			break
+	for i := range s {
+		if length == 0 {
+			return s[:i]
 		}
+		length--
 	}
-	return truncated
+	return s
 }
 
-func Non_printable(s string) string {
+func Extract_non_printable(s string) string {
 	return re_printable.ReplaceAllString(s, "")
 }
 
@@ -104,9 +114,5 @@ func Strip_non_printable(s string) string {
 }
 
 func normalize(s string) string {
-	//	Remove carriage return
-	s = strings.Replace(s, "\r", "", -1)
-	s = re_space.ReplaceAllString(s, " ")
-	s = re_hyphen.ReplaceAllString(s, "-")
-	return s
+	return normalizer.Replace(s)
 }
