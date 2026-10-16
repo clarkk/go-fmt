@@ -54,7 +54,7 @@ type (
 		src_encoded		[]byte
 		
 		separator		rune
-		checked_header	bool
+		has_header		bool
 		out 			Rows
 		out_header		[]string
 		
@@ -244,13 +244,15 @@ func (r *Reader) parse(mimetype string) (table, error){
 				r.remove_overflow_cols()
 				
 				cols		= r.cols()
-				cols_max	= slices.Max(cols)
+				cols_max	= max(len(r.out_header), slices.Max(cols))
 			}
 		}
 		
 		if len(r.out_header) == 0 && cols[0] < cols_max {
-			r.log_append("CSV has too few column headers")
-			return table{}, &Error{"CSV has too few column headers", nil}
+			if !r.options[opt_optional_header] || r.check_header(false) == nil {
+				r.log_append("CSV has too few column headers")
+				return table{}, &Error{"CSV has too few column headers", nil}
+			}
 		}
 	}
 	
@@ -263,7 +265,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 		r.fill_empty_cols(cols_max)
 	}
 	
-	if !r.checked_header {
+	if !r.has_header {
 		//	Optional column header
 		if r.options[opt_optional_header] {
 			if r.check_header(false) == nil {
@@ -474,7 +476,11 @@ func (r *Reader) remove_overflow_cols(){
 }
 
 func (r *Reader) check_header(error_log bool) error {
-	has_heading := true
+	if r.has_header {
+		return nil
+	}
+	
+	has_header := true
 	
 	first_row := r.out[0].Row
 	for _, value := range first_row {
@@ -487,21 +493,22 @@ func (r *Reader) check_header(error_log bool) error {
 		
 		value = re_col_heading.ReplaceAllString(value, "")
 		if _, err := strconv.Atoi(value); err == nil {
-			has_heading	= false
+			has_header = false
 		}
 	}
 	
-	if !has_heading {
+	if !has_header {
 		if error_log {
 			r.log_append("Column headers in CSV required")
 		}
 		return &Error{"Column headers in CSV required", nil}
-	} else {
-		r.log_append("Column headers found")
-		r.checked_header	= true
-		r.out_header		= first_row
-		r.out				= r.out[1:]
 	}
+	
+	r.log_append("Column headers found")
+	r.has_header	= true
+	r.out_header	= first_row
+	r.out			= r.out[1:]
+	
 	return nil
 }
 

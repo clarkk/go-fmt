@@ -44,7 +44,7 @@ func Test_error(t *testing.T){
 				return NewReader("")
 			},
 			input:	"head1\ntest1",
-			error:	"CSV must have more than one column",
+			error:	"Unable to find separator candidates",
 		},{
 			reader:	func(t *testing.T) *Reader {
 				return NewReader("")
@@ -189,6 +189,13 @@ func Test_ouput(t *testing.T){
 			input:	"head1,head2,head3\ntest1,test2,test3,test4\ntest1,test2",
 			header:	"head1,head2,head3",
 			rows:	"test1,test2,test3\ntest1,test2,",
+		},{
+			reader:	func(t *testing.T) *Reader {
+				return NewReader("")
+			},
+			input:	"head1,head2,head3\ntest1,test2\ntest1,test2",
+			header:	"head1,head2,head3",
+			rows:	"test1,test2,\ntest1,test2,",
 		},{
 			reader:	func(t *testing.T) *Reader {
 				return NewReader("").

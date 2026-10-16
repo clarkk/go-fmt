@@ -2,7 +2,6 @@ package csv
 
 import (
 	"fmt"
-	"cmp"
 	"slices"
 )
 
@@ -21,7 +20,7 @@ func (c *count_sep) count_sep(sep rune, count int){
 }
 
 func (c *count_sep) get_sep() (rune, error){
-	return get_sep(c.count)
+	return determinate_sep(c.count)
 }
 
 func (c *count_lines_sep) count_sep(sep rune, count int){
@@ -43,22 +42,22 @@ func (c *count_lines_sep) get_sep() (rune, error){
 			candidates[sep] = max
 		}
 	}
-	return get_sep(candidates)
+	return determinate_sep(candidates)
 }
 
-func get_sep(count map[rune]int) (rune, error){
-	length := len(count)
-	if length == 0 {
+func determinate_sep(count map[rune]int) (rune, error){
+	var (
+		sep			rune
+		max_count	int
+	)
+	for _, candidate := range separators {
+		if n := count[candidate]; n > max_count {
+			sep = candidate
+			max_count = n
+		}
+	}
+	if max_count == 0 {
 		return 0, fmt.Errorf("Unable to find separator candidates")
 	}
-	keys := make([]rune, length)
-	i := 0
-	for sep := range count {
-		keys[i] = sep
-		i++
-	}
-	slices.SortFunc(keys, func(a, b rune) int {
-		return cmp.Compare(count[b], count[a])
-	})
-	return keys[0], nil
+	return sep, nil
 }
