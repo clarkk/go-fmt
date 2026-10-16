@@ -189,8 +189,7 @@ func (r *Reader) parse(mimetype string) (*Table, error){
 	}
 	
 	if err := r.encoding(); err != nil {
-		r.log_append(err.Error())
-		return nil, &Error{err.Error(), nil}
+		return nil, r.log_err(err.Error(), err)
 	}
 	
 	read := csv.NewReader(bytes.NewBuffer(r.src_encoded))
@@ -203,8 +202,7 @@ func (r *Reader) parse(mimetype string) (*Table, error){
 			r.log_non_printable()
 			return nil, &Error{"Invalid CSV file encoding", nil}
 		}
-		r.log_append("Unable to parse CSV: "+err.Error())
-		return nil, &Error{"Unable to parse CSV: "+err.Error(), err}
+		return nil, r.log_err("Unable to parse CSV: "+err.Error(), err)
 	}
 	r.parse_lines(lines)
 	
@@ -247,16 +245,14 @@ func (r *Reader) parse(mimetype string) (*Table, error){
 		
 		if len(r.out_header) == 0 && cols[0] < cols_max {
 			if !r.options[opt_optional_header] || r.check_header(false) == nil {
-				r.log_append("CSV has too few column headers")
-				return nil, &Error{"CSV has too few column headers", nil}
+				return nil, r.log_err("CSV has too few column headers", nil)
 			}
 		}
 	}
 	
 	if r.options[opt_col_integrity] {
 		if cols_max != slices.Min(cols) {
-			r.log_append("Columns in CSV not equal")
-			return nil, &Error{"Columns in CSV not equal", nil}
+			return nil, r.log_err("Columns in CSV not equal", nil)
 		}
 	} else {
 		r.fill_empty_cols(cols_max)
@@ -377,8 +373,7 @@ func (r *Reader) convert_xls() error {
 	defer os.Remove(file_name_csv)
 	c := cmd.Command{}
 	if err := c.Run("ssconvert "+file_name+" "+file_name_csv); err != nil {
-		r.log_append("Unable to convert XLS to CSV")
-		return &Error{"Unable to convert XLS to CSV", err}
+		return r.log_err("Unable to convert XLS to CSV", err)
 	}
 	
 	if err := r.src_convert_file(file_name_csv); err != nil {
@@ -613,22 +608,25 @@ func (r *Reader) log_options(){
 	}
 }
 
-func (r *Reader) log_append(s string){
-	r.log = append(r.log, s)
-}
-
 func (r *Reader) empty_rows_error() error {
 	if len(r.out) == 0 {
-		r.log_append("CSV empty")
-		return &Error{"CSV empty", nil}
+		return r.log_err("CSV empty", nil)
 	}
 	return nil
 }
 
 func (r *Reader) one_col_error(cols_max int) error {
 	if cols_max == 1 {
-		r.log_append("CSV must have more than one column")
-		return &Error{"CSV must have more than one column", nil}
+		return r.log_err("CSV must have more than one column", nil)
 	}
 	return nil
+}
+
+func (r *Reader) log_err(s string, err error) *Error {
+	r.log_append(s)
+	return &Error{s, err}
+}
+
+func (r *Reader) log_append(s string){
+	r.log = append(r.log, s)
 }
