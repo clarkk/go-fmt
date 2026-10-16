@@ -58,6 +58,13 @@ func Test_error(t *testing.T){
 			},
 			input:	"head1,head2",
 			error:	"CSV empty",
+		},{
+			reader: func(t *testing.T) *Reader {
+				return NewReader("").
+					Remove_overflow_cols()
+			},
+			input: "1,2\n3,4",
+			error: "Column headers in CSV required",
 		}}
 		verify_test(t, tests)
 	})
@@ -196,13 +203,6 @@ func Test_ouput(t *testing.T){
 			input:	"head1,head2,head3\ntest1,test2,test3,test4\ntest1,test2",
 			header:	"head1,head2,head3",
 			rows:	"test1,test2,test3\ntest1,test2,",
-		},{
-			reader:	func(t *testing.T) *Reader {
-				return NewReader("")
-			},
-			input:	"head1,head2,head3\ntest1,test2\ntest1,test2",
-			header:	"head1,head2,head3",
-			rows:	"test1,test2,\ntest1,test2,",
 		},{
 			reader:	func(t *testing.T) *Reader {
 				return NewReader("")
