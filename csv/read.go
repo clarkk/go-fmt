@@ -571,6 +571,10 @@ func (r *Reader) src_convert_file(file string) error {
 }
 
 func (r *Reader) src_encoding(s string) error {
+	if err := r.src_encoding_declared(&s); err != nil {
+		return err
+	}
+	
 	r.src_encoded	= []byte(s)
 	r.non_printable = sanitize.Extract_non_printable(s)
 	
@@ -578,7 +582,29 @@ func (r *Reader) src_encoding(s string) error {
 		return fmt.Errorf("CSV empty")
 	}
 	
+	if r.separator != 0 {
+		r.log_append("Separator (declared): "+string(r.separator))
+		return nil
+	}
+	
 	return r.get_separator(s)
+}
+
+func (r *Reader) src_encoding_declared(s *string) error {
+	first_line, rest, _ := strings.Cut(*s, "\n")
+	first_line = strings.TrimSuffix(first_line, "\r")
+	
+	sep, has_sep := strings.CutPrefix(first_line, "sep=")
+	if has_sep {
+		chars := []rune(sep)
+		if len(chars) != 1 {
+			return fmt.Errorf("Invalid CSV separator declaration")
+		}
+		r.separator = chars[0]
+		*s = rest
+	}
+	
+	return nil
 }
 
 func (r *Reader) cols() []int {
