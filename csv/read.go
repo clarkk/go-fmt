@@ -365,6 +365,7 @@ func (r *Reader) convert_xls() error {
 	if err != nil {
 		return fmt.Errorf("Unable to create temp xls file: %w", err)
 	}
+	defer f.Close()
 	file_name := f.Name()
 	defer os.Remove(file_name)
 	
@@ -374,12 +375,12 @@ func (r *Reader) convert_xls() error {
 	}
 	
 	file_name_csv := file_name+".csv"
+	defer os.Remove(file_name_csv)
 	c := cmd.Command{}
 	if err := c.Run("ssconvert "+file_name+" "+file_name_csv); err != nil {
 		r.log_append("Unable to convert XLS to CSV")
 		return &Error{"Unable to convert XLS to CSV", err}
 	}
-	defer os.Remove(file_name_csv)
 	
 	if err := r.src_convert_file(file_name_csv); err != nil {
 		return err
@@ -473,8 +474,7 @@ func (r *Reader) remove_overflow_cols(){
 }
 
 func (r *Reader) check_header(error_log bool) error {
-	r.checked_header	= true
-	has_heading			:= true
+	has_heading := true
 	
 	first_row := r.out[0].Row
 	for _, value := range first_row {
@@ -498,8 +498,9 @@ func (r *Reader) check_header(error_log bool) error {
 		return &Error{"Column headers in CSV required", nil}
 	} else {
 		r.log_append("Column headers found")
-		r.out_header	= first_row
-		r.out			= r.out[1:]
+		r.checked_header	= true
+		r.out_header		= first_row
+		r.out				= r.out[1:]
 	}
 	return nil
 }
@@ -521,7 +522,9 @@ func (r *Reader) get_separator(s string) error {
 		return nil
 	}
 	
-	c := newCount_sep()
+	c := &count_sep{
+		count: map[rune]int{},
+	}
 	for _, sep := range separators {
 		c.count_sep(sep, strings.Count(s, string(sep)))
 	}
@@ -537,17 +540,19 @@ func (r *Reader) get_separator(s string) error {
 }
 
 func (r *Reader) get_separator_lines(s string) bool {
-	c := newCount_sep()
+	c := &count_lines_sep{
+		count: map[rune][]int{},
+	}
 	for _, line := range strings.Split(s, "\n") {
 		if line == "" {
 			continue
 		}
 		for _, sep := range separators {
-			c.count_lines_sep(sep, strings.Count(line, string(sep)))
+			c.count_sep(sep, strings.Count(line, string(sep)))
 		}
 	}
 	
-	sep, err := c.get_lines_sep()
+	sep, err := c.get_sep()
 	if err != nil {
 		return false
 	}
