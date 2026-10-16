@@ -236,9 +236,6 @@ func (r *Reader) parse(mimetype string) (table, error){
 				
 				if r.options[opt_remove_empty_cols] {
 					r.remove_empty_cols()
-					
-					cols		= r.cols()
-					cols_max	= slices.Max(cols)
 				}
 				
 				r.remove_overflow_cols()

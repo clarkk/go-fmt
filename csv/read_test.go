@@ -177,6 +177,13 @@ func Test_ouput(t *testing.T){
 		},{
 			reader:	func(t *testing.T) *Reader {
 				return NewReader("").
+					Optional_header()
+			},
+			input:	"1,2\n1,2,3",
+			rows:	"1,2,\n1,2,3",
+		},{
+			reader:	func(t *testing.T) *Reader {
+				return NewReader("").
 					Ignore_header()
 			},
 			input:	"head1,head2,head3\ntest1,test2,test3\ntest1,test2,test3",
@@ -196,6 +203,21 @@ func Test_ouput(t *testing.T){
 			input:	"head1,head2,head3\ntest1,test2\ntest1,test2",
 			header:	"head1,head2,head3",
 			rows:	"test1,test2,\ntest1,test2,",
+		},{
+			reader:	func(t *testing.T) *Reader {
+				return NewReader("")
+			},
+			input:	"head1,head2,head3\ntest1,test2\ntest1,test2",
+			header:	"head1,head2,head3",
+			rows:	"test1,test2,\ntest1,test2,",
+		},{
+			reader:	func(t *testing.T) *Reader {
+				return NewReader("").
+					Remove_empty_cols()
+			},
+			input:	"head1,head2,head3,head4\ntest1,test2,,test4\ntest1,",
+			header:	"head1,head2,head4",
+			rows:	"test1,test2,test4\ntest1,,",
 		},{
 			reader:	func(t *testing.T) *Reader {
 				return NewReader("").
