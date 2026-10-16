@@ -63,14 +63,14 @@ type (
 		log 			Log
 	}
 	
-	Header 		[]string
-	Rows		[]row
-	Log 		[]string
-	
-	table struct {
+	Table struct {
 		Header 	Header
 		Rows	Rows
 	}
+	
+	Header 		[]string
+	Rows		[]row
+	Log 		[]string
 	
 	row struct {
 		Line	int			`json:"line"`
@@ -92,17 +92,17 @@ func NewReader(tmp_dir string) *Reader {
 }
 
 //	Parse file
-func (r *Reader) File(file, mimetype string) (table, error){
+func (r *Reader) File(file, mimetype string) (*Table, error){
 	var err error
 	r.src, err = os.ReadFile(file)
 	if err != nil {
-		return table{}, fmt.Errorf("Unable read CSV file: %w", err)
+		return nil, fmt.Errorf("Unable read CSV file: %w", err)
 	}
 	return r.parse(mimetype)
 }
 
 //	Parse bytes
-func (r *Reader) Bytes(b []byte, mimetype string) (table, error){
+func (r *Reader) Bytes(b []byte, mimetype string) (*Table, error){
 	r.src = b
 	return r.parse(mimetype)
 }
@@ -167,30 +167,30 @@ func (r *Reader) Log() []string {
 	return r.log
 }
 
-func (r *Reader) parse(mimetype string) (table, error){
+func (r *Reader) parse(mimetype string) (*Table, error){
 	r.log_options()
 	
 	if r.options[opt_optional_header] && r.options[opt_ignore_header] {
-		return table{}, &Error{"Options 'optional_header' and 'ignore_header' can not be used in conjunction", nil}
+		return nil, &Error{"Options 'optional_header' and 'ignore_header' can not be used in conjunction", nil}
 	}
 	
 	if r.options[opt_remove_overflow_cols] && r.options[opt_ignore_header] {
-		return table{}, &Error{"Options 'remove_overflow_cols' and 'ignore_header' can not be used in conjunction", nil}
+		return nil, &Error{"Options 'remove_overflow_cols' and 'ignore_header' can not be used in conjunction", nil}
 	}
 	
 	if r.options[opt_remove_overflow_cols] && r.options[opt_col_integrity] {
-		return table{}, &Error{"Options 'remove_overflow_cols' and 'col_integrity' can not be used in conjunction", nil}
+		return nil, &Error{"Options 'remove_overflow_cols' and 'col_integrity' can not be used in conjunction", nil}
 	}
 	
 	if mimetype == MIME_XLS || mimetype == MIME_XLXS {
 		if err := r.convert_xls(); err != nil {
-			return table{}, err
+			return nil, err
 		}
 	}
 	
 	if err := r.encoding(); err != nil {
 		r.log_append(err.Error())
-		return table{}, &Error{err.Error(), nil}
+		return nil, &Error{err.Error(), nil}
 	}
 	
 	read := csv.NewReader(bytes.NewBuffer(r.src_encoded))
@@ -201,22 +201,22 @@ func (r *Reader) parse(mimetype string) (table, error){
 	if err != nil {
 		if r.non_printable != "" {
 			r.log_non_printable()
-			return table{}, &Error{"Invalid CSV file encoding", nil}
+			return nil, &Error{"Invalid CSV file encoding", nil}
 		}
 		r.log_append("Unable to parse CSV: "+err.Error())
-		return table{}, &Error{"Unable to parse CSV: "+err.Error(), err}
+		return nil, &Error{"Unable to parse CSV: "+err.Error(), err}
 	}
 	r.parse_lines(lines)
 	
 	if err := r.empty_rows_error(); err != nil {
-		return table{}, err
+		return nil, err
 	}
 	
 	cols		:= r.cols()
 	cols_max	:= slices.Max(cols)
 	
 	if err := r.one_col_error(cols_max); err != nil {
-		return table{}, err
+		return nil, err
 	}
 	
 	//	Remove empty columns before check_header()
@@ -231,7 +231,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 		if r.options[opt_remove_overflow_cols] {
 			if r.check_header(false) == nil {
 				if err := r.empty_rows_error(); err != nil {
-					return table{}, err
+					return nil, err
 				}
 				
 				if r.options[opt_remove_empty_cols] {
@@ -248,7 +248,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 		if len(r.out_header) == 0 && cols[0] < cols_max {
 			if !r.options[opt_optional_header] || r.check_header(false) == nil {
 				r.log_append("CSV has too few column headers")
-				return table{}, &Error{"CSV has too few column headers", nil}
+				return nil, &Error{"CSV has too few column headers", nil}
 			}
 		}
 	}
@@ -256,7 +256,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 	if r.options[opt_col_integrity] {
 		if cols_max != slices.Min(cols) {
 			r.log_append("Columns in CSV not equal")
-			return table{}, &Error{"Columns in CSV not equal", nil}
+			return nil, &Error{"Columns in CSV not equal", nil}
 		}
 	} else {
 		r.fill_empty_cols(cols_max)
@@ -267,7 +267,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 		if r.options[opt_optional_header] {
 			if r.check_header(false) == nil {
 				if err := r.empty_rows_error(); err != nil {
-					return table{}, err
+					return nil, err
 				}
 				
 				if r.options[opt_remove_empty_cols] {
@@ -280,11 +280,11 @@ func (r *Reader) parse(mimetype string) (table, error){
 		//	Require column header
 		} else if !r.options[opt_ignore_header] {
 			if err := r.check_header(true); err != nil {
-				return table{}, err
+				return nil, err
 			}
 			
 			if err := r.empty_rows_error(); err != nil {
-				return table{}, err
+				return nil, err
 			}
 			
 			if r.options[opt_remove_empty_cols] {
@@ -297,7 +297,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 	}
 	
 	if err := r.one_col_error(cols_max); err != nil {
-		return table{}, err
+		return nil, err
 	}
 	
 	if r.non_printable != "" {
@@ -305,7 +305,7 @@ func (r *Reader) parse(mimetype string) (table, error){
 	}
 	
 	r.log_append(fmt.Sprintf("Rows found: %d", len(r.out)))
-	return table{
+	return &Table{
 		r.out_header,
 		r.out,
 	}, nil
