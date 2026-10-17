@@ -139,13 +139,13 @@ func (r *Reader) Col_integrity() *Reader {
 	return r
 }
 
-//	Remove empty colums
+//	Remove colums with empty rows including header
 func (r *Reader) Remove_empty_cols() *Reader {
 	r.options[opt_remove_empty_cols] = true
 	return r
 }
 
-//	Remove overflow colums
+//	Remove colums overflowing header
 func (r *Reader) Remove_overflow_cols() *Reader {
 	r.options[opt_remove_overflow_cols] = true
 	return r
@@ -157,7 +157,7 @@ func (r *Reader) Optional_header() *Reader {
 	return r
 }
 
-//	Ignore column header
+//	Ignore column header and parse all lines as rows
 func (r *Reader) Ignore_header() *Reader {
 	r.options[opt_ignore_header] = true
 	return r
