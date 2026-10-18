@@ -48,7 +48,7 @@ func Filter_utf8mb3(s string) string {
 }
 
 func Trim(s string, allow_newlines bool) string {
-	s = normalize(s)
+	s = strings.TrimSpace(normalize(s))
 	
 	has_newline := strings.Contains(s, "\n")
 	if has_newline {
@@ -58,21 +58,10 @@ func Trim(s string, allow_newlines bool) string {
 			for i, v := range lines {
 				lines[i] = strings.TrimSpace(v)
 			}
-			//	Remove empty lines in the beginning
-			for len(lines) > 0 && lines[0] == "" {
-				lines = lines[1:]
-			}
-			//	Remove empty lines in the end
-			for len(lines) > 0 && lines[len(lines)-1] == "" {
-				lines = lines[:len(lines)-1]
-			}
 			s = strings.Join(lines, "\n")
 		} else {
 			s = strings.ReplaceAll(s, "\n", " ")
-			s = strings.TrimSpace(s)
 		}
-	} else {
-		s = strings.TrimSpace(s)
 	}
 	
 	//	Reduce consecutive newlines to at most two
