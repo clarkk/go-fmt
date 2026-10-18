@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"regexp"
 	"strings"
-	"strconv"
 	"unicode/utf8"
 	"encoding/csv"
 	"path/filepath"
@@ -40,7 +39,7 @@ var (
 		'\t',
 	}
 	
-	re_col_heading = regexp.MustCompile(`[^\pL\d]`)
+	re_col_heading = regexp.MustCompile(`\pL`)
 )
 
 type (
@@ -483,8 +482,7 @@ func (r *Reader) check_header(error_log bool) error {
 			return &Error{"Column headers cannot be empty", nil}
 		}
 		
-		value = re_col_heading.ReplaceAllString(value, "")
-		if _, err := strconv.Atoi(value); err == nil {
+		if !re_col_heading.MatchString(value) {
 			has_header = false
 		}
 	}
